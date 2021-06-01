@@ -9,9 +9,9 @@ Rules to transform variates from one distribution to another.
 """
 module VariateTransformRules
 
-include("standard_uniform.jl")
-include("standard_normal.jl")
-include("trafo_utils.jl")
+#include("standard_uniform.jl")
+#include("standard_normal.jl")
+#include("trafo_utils.jl")
 #include("var_trafo_result.jl")
 
 function __init__()
