@@ -1,1 +1,1 @@
-# VariateTransformRules.jl
+# VariateTransformations.jl

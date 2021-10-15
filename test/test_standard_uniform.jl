@@ -1,6 +1,6 @@
-# This file is a part of VariateTransformRules.jl, licensed under the MIT License (MIT).
+# This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
-using VariateTransformRules
+using VariateTransformations
 using Test
 
 using Random, Statistics, LinearAlgebra
@@ -14,16 +14,16 @@ using ForwardDiff
     stblrng() = StableRNG(789990641)
 
     @testset "StandardUvUniform" begin
-        @test @inferred(VariateTransformRules.StandardUvUniform()) isa VariateTransformRules.StandardUvUniform{Float64}
-        @test @inferred(VariateTransformRules.StandardUvUniform{Float32}()) isa VariateTransformRules.StandardUvUniform{Float32}
-        @test @inferred(VariateTransformRules.StandardUvUniform{Float64}()) isa VariateTransformRules.StandardUvUniform{Float64}
+        @test @inferred(VariateTransformations.StandardUvUniform()) isa VariateTransformations.StandardUvUniform{Float64}
+        @test @inferred(VariateTransformations.StandardUvUniform{Float32}()) isa VariateTransformations.StandardUvUniform{Float32}
+        @test @inferred(VariateTransformations.StandardUvUniform{Float64}()) isa VariateTransformations.StandardUvUniform{Float64}
 
-        @test @inferred(Uniform(VariateTransformRules.StandardUvUniform{Float32}())) isa Uniform{Float32}
-        @test @inferred(Uniform(VariateTransformRules.StandardUvUniform{Float64}())) isa Uniform{Float64}
-        @test @inferred(Uniform(VariateTransformRules.StandardUvUniform())) == Uniform()
-        @test @inferred(convert(Uniform, VariateTransformRules.StandardUvUniform())) == Uniform()
+        @test @inferred(Uniform(VariateTransformations.StandardUvUniform{Float32}())) isa Uniform{Float32}
+        @test @inferred(Uniform(VariateTransformations.StandardUvUniform{Float64}())) isa Uniform{Float64}
+        @test @inferred(Uniform(VariateTransformations.StandardUvUniform())) == Uniform()
+        @test @inferred(convert(Uniform, VariateTransformations.StandardUvUniform())) == Uniform()
 
-        d = VariateTransformRules.StandardUvUniform()
+        d = VariateTransformations.StandardUvUniform()
         dref = Uniform()
 
         @test @inferred(minimum(d)) == minimum(dref)
@@ -75,26 +75,26 @@ using ForwardDiff
         @test @inferred(rand(stblrng(), d)) == rand(stblrng(), d)
         @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), d, 5)
 
-        @test @inferred(truncated(VariateTransformRules.StandardUvUniform{Float32}(), -0.5f0, 0.7f0)) isa Uniform{Float32}
-        @test truncated(VariateTransformRules.StandardUvUniform{Float32}(), -0.5f0, 0.7f0) == Uniform(0.0f0, 0.7f0)
-        @test truncated(VariateTransformRules.StandardUvUniform{Float32}(), 0.2f0, 0.7f0) == Uniform(0.2f0, 0.7f0)
+        @test @inferred(truncated(VariateTransformations.StandardUvUniform{Float32}(), -0.5f0, 0.7f0)) isa Uniform{Float32}
+        @test truncated(VariateTransformations.StandardUvUniform{Float32}(), -0.5f0, 0.7f0) == Uniform(0.0f0, 0.7f0)
+        @test truncated(VariateTransformations.StandardUvUniform{Float32}(), 0.2f0, 0.7f0) == Uniform(0.2f0, 0.7f0)
 
-        @test @inferred(product_distribution(fill(VariateTransformRules.StandardUvUniform{Float32}(), 3))) isa VariateTransformRules.StandardMvUniform{Float32}
-        @test product_distribution(fill(VariateTransformRules.StandardUvUniform{Float32}(), 3)) == VariateTransformRules.StandardMvUniform{Float32}(3)
+        @test @inferred(product_distribution(fill(VariateTransformations.StandardUvUniform{Float32}(), 3))) isa VariateTransformations.StandardMvUniform{Float32}
+        @test product_distribution(fill(VariateTransformations.StandardUvUniform{Float32}(), 3)) == VariateTransformations.StandardMvUniform{Float32}(3)
     end
 
 
     @testset "StandardMvUniform" begin
-        @test @inferred(VariateTransformRules.StandardMvUniform(3)) isa VariateTransformRules.StandardMvUniform{Float64}
-        @test @inferred(VariateTransformRules.StandardMvUniform{Float32}(3)) isa VariateTransformRules.StandardMvUniform{Float32}
-        @test @inferred(VariateTransformRules.StandardMvUniform{Float64}(3)) isa VariateTransformRules.StandardMvUniform{Float64}
+        @test @inferred(VariateTransformations.StandardMvUniform(3)) isa VariateTransformations.StandardMvUniform{Float64}
+        @test @inferred(VariateTransformations.StandardMvUniform{Float32}(3)) isa VariateTransformations.StandardMvUniform{Float32}
+        @test @inferred(VariateTransformations.StandardMvUniform{Float64}(3)) isa VariateTransformations.StandardMvUniform{Float64}
         
-        @test @inferred(Distributions.Product(VariateTransformRules.StandardMvUniform{Float32}(3))) isa Distributions.Product{Continuous,VariateTransformRules.StandardUvUniform{Float32}}
-        @test @inferred(Distributions.Product(VariateTransformRules.StandardMvUniform{Float64}(3))) isa Distributions.Product{Continuous,VariateTransformRules.StandardUvUniform{Float64}}
-        @test @inferred(Distributions.Product(VariateTransformRules.StandardMvUniform{Float64}(3))) == Distributions.Product(Fill(VariateTransformRules.StandardUvUniform(), 3))
-        @test @inferred(convert(Product, VariateTransformRules.StandardMvUniform(3))) == Distributions.Product(Fill(VariateTransformRules.StandardUvUniform(), 3))
+        @test @inferred(Distributions.Product(VariateTransformations.StandardMvUniform{Float32}(3))) isa Distributions.Product{Continuous,VariateTransformations.StandardUvUniform{Float32}}
+        @test @inferred(Distributions.Product(VariateTransformations.StandardMvUniform{Float64}(3))) isa Distributions.Product{Continuous,VariateTransformations.StandardUvUniform{Float64}}
+        @test @inferred(Distributions.Product(VariateTransformations.StandardMvUniform{Float64}(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvUniform(), 3))
+        @test @inferred(convert(Product, VariateTransformations.StandardMvUniform(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvUniform(), 3))
 
-        d = VariateTransformRules.StandardMvUniform(3)
+        d = VariateTransformations.StandardMvUniform(3)
         dref = product_distribution(fill(Uniform(), 3))
 
         @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
@@ -103,11 +103,11 @@ using ForwardDiff
         @test @inferred(length(d)) == length(dref)
         @test @inferred(size(d)) == size(dref)
 
-        @test @inferred(view(VariateTransformRules.StandardMvUniform{Float32}(7), 3)) isa VariateTransformRules.StandardUvUniform{Float32}
-        @test_throws BoundsError view(VariateTransformRules.StandardMvUniform{Float32}(7), 9)
-        @test @inferred(view(VariateTransformRules.StandardMvUniform{Float32}(7), 2:4)) isa VariateTransformRules.StandardMvUniform{Float32}
-        @test view(VariateTransformRules.StandardMvUniform{Float32}(7), 2:4) == VariateTransformRules.StandardMvUniform{Float32}(3)
-        @test_throws BoundsError view(VariateTransformRules.StandardMvUniform{Float32}(7), 2:8)
+        @test @inferred(view(VariateTransformations.StandardMvUniform{Float32}(7), 3)) isa VariateTransformations.StandardUvUniform{Float32}
+        @test_throws BoundsError view(VariateTransformations.StandardMvUniform{Float32}(7), 9)
+        @test @inferred(view(VariateTransformations.StandardMvUniform{Float32}(7), 2:4)) isa VariateTransformations.StandardMvUniform{Float32}
+        @test view(VariateTransformations.StandardMvUniform{Float32}(7), 2:4) == VariateTransformations.StandardMvUniform{Float32}(3)
+        @test_throws BoundsError view(VariateTransformations.StandardMvUniform{Float32}(7), 2:8)
         
         @test @inferred(mean(d)) == mean(dref)
         @test @inferred(var(d)) == var(dref)

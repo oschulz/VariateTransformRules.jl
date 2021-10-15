@@ -1,4 +1,4 @@
-The VariateTransformRules.jl package is licensed under the MIT "Expat" License:
+The VariateTransformations.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2020:
 >

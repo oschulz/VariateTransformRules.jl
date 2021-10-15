@@ -1,4 +1,4 @@
-# This file is a part of VariateTransformRules.jl, licensed under the MIT License (MIT).
+# This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
 
 """

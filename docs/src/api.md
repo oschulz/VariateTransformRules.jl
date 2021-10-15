@@ -1,11 +1,5 @@
 # API
 
-```@meta
-DocTestSetup  = quote
-    using VariateTransformRules
-end
-```
-
 ## Modules
 
 ```@index
@@ -27,6 +21,6 @@ Order = [:macro, :function]
 # Documentation
 
 ```@autodocs
-Modules = [VariateTransformRules]
+Modules = [VariateTransformations]
 Order = [:module, :type, :constant, :macro, :function]
 ```

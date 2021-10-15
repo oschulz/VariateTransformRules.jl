@@ -5,14 +5,22 @@
 # for local builds.
 
 using Documenter
-using VariateTransformRules
+using VariateTransformations
+
+# Doctest setup
+DocMeta.setdocmeta!(
+    VariateTransformations,
+    :DocTestSetup,
+    :(using VariateTransformations);
+    recursive=true,
+)
 
 makedocs(
-    sitename = "VariateTransformRules",
-    modules = [VariateTransformRules],
+    sitename = "VariateTransformations",
+    modules = [VariateTransformations],
     format = Documenter.HTML(
         prettyurls = !("local" in ARGS),
-        canonical = "https://oschulz.github.io/VariateTransformRules.jl/stable/"
+        canonical = "https://oschulz.github.io/VariateTransformations.jl/stable/"
     ),
     pages = [
         "Home" => "index.md",
@@ -25,7 +33,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/oschulz/VariateTransformRules.jl.git",
+    repo = "github.com/oschulz/VariateTransformations.jl.git",
     forcepush = true,
     push_preview = true,
 )

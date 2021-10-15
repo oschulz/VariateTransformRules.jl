@@ -1,6 +1,6 @@
-# This file is a part of VariateTransformRules.jl, licensed under the MIT License (MIT).
+# This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
-using VariateTransformRules
+using VariateTransformations
 using Test
 
 using Random, Statistics, LinearAlgebra
@@ -12,16 +12,16 @@ using StableRNGs
     stblrng() = StableRNG(789990641)
 
     @testset "StandardUvNormal" begin
-        @test @inferred(VariateTransformRules.StandardUvNormal()) isa VariateTransformRules.StandardUvNormal{Float64}
-        @test @inferred(VariateTransformRules.StandardUvNormal{Float32}()) isa VariateTransformRules.StandardUvNormal{Float32}
-        @test @inferred(VariateTransformRules.StandardUvNormal{Float64}()) isa VariateTransformRules.StandardUvNormal{Float64}
+        @test @inferred(VariateTransformations.StandardUvNormal()) isa VariateTransformations.StandardUvNormal{Float64}
+        @test @inferred(VariateTransformations.StandardUvNormal{Float32}()) isa VariateTransformations.StandardUvNormal{Float32}
+        @test @inferred(VariateTransformations.StandardUvNormal{Float64}()) isa VariateTransformations.StandardUvNormal{Float64}
 
-        @test @inferred(Normal(VariateTransformRules.StandardUvNormal{Float32}())) isa Normal{Float32}
-        @test @inferred(Normal(VariateTransformRules.StandardUvNormal{Float64}())) isa Normal{Float64}
-        @test @inferred(Normal(VariateTransformRules.StandardUvNormal())) == Normal()
-        @test @inferred(convert(Normal, VariateTransformRules.StandardUvNormal())) == Normal()
+        @test @inferred(Normal(VariateTransformations.StandardUvNormal{Float32}())) isa Normal{Float32}
+        @test @inferred(Normal(VariateTransformations.StandardUvNormal{Float64}())) isa Normal{Float64}
+        @test @inferred(Normal(VariateTransformations.StandardUvNormal())) == Normal()
+        @test @inferred(convert(Normal, VariateTransformations.StandardUvNormal())) == Normal()
 
-        d = VariateTransformRules.StandardUvNormal()
+        d = VariateTransformations.StandardUvNormal()
         dref = Normal()
 
         @test @inferred(minimum(d)) == minimum(dref)
@@ -75,30 +75,30 @@ using StableRNGs
         @test @inferred(rand(stblrng(), d)) == rand(stblrng(), d)
         @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), d, 5)
 
-        @test @inferred(truncated(VariateTransformRules.StandardUvNormal{Float32}(), -2.2f0, 3.1f0)) isa Truncated{Normal{Float32}}
-        @test truncated(VariateTransformRules.StandardUvNormal{Float32}(), -2.2f0, 3.1f0) == truncated(Normal(0.0f0, 1.0f0), -2.2f0, 3.1f0)
+        @test @inferred(truncated(VariateTransformations.StandardUvNormal{Float32}(), -2.2f0, 3.1f0)) isa Truncated{Normal{Float32}}
+        @test truncated(VariateTransformations.StandardUvNormal{Float32}(), -2.2f0, 3.1f0) == truncated(Normal(0.0f0, 1.0f0), -2.2f0, 3.1f0)
 
-        @test @inferred(product_distribution(fill(VariateTransformRules.StandardUvNormal{Float32}(), 3))) isa VariateTransformRules.StandardMvNormal{Float32}
-        @test product_distribution(fill(VariateTransformRules.StandardUvNormal{Float32}(), 3)) == VariateTransformRules.StandardMvNormal{Float32}(3)
+        @test @inferred(product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3))) isa VariateTransformations.StandardMvNormal{Float32}
+        @test product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3)) == VariateTransformations.StandardMvNormal{Float32}(3)
     end
 
 
     @testset "StandardMvNormal" begin
-        @test @inferred(VariateTransformRules.StandardMvNormal(3)) isa VariateTransformRules.StandardMvNormal{Float64}
-        @test @inferred(VariateTransformRules.StandardMvNormal{Float32}(3)) isa VariateTransformRules.StandardMvNormal{Float32}
-        @test @inferred(VariateTransformRules.StandardMvNormal{Float64}(3)) isa VariateTransformRules.StandardMvNormal{Float64}
+        @test @inferred(VariateTransformations.StandardMvNormal(3)) isa VariateTransformations.StandardMvNormal{Float64}
+        @test @inferred(VariateTransformations.StandardMvNormal{Float32}(3)) isa VariateTransformations.StandardMvNormal{Float32}
+        @test @inferred(VariateTransformations.StandardMvNormal{Float64}(3)) isa VariateTransformations.StandardMvNormal{Float64}
 
-        @test @inferred(Distributions.Product(VariateTransformRules.StandardMvNormal{Float32}(3))) isa Distributions.Product{Continuous,VariateTransformRules.StandardUvNormal{Float32}}
-        @test @inferred(Distributions.Product(VariateTransformRules.StandardMvNormal{Float64}(3))) isa Distributions.Product{Continuous,VariateTransformRules.StandardUvNormal{Float64}}
-        @test @inferred(Distributions.Product(VariateTransformRules.StandardMvNormal{Float64}(3))) == Distributions.Product(Fill(VariateTransformRules.StandardUvNormal(), 3))
-        @test @inferred(convert(Product, VariateTransformRules.StandardMvNormal(3))) == Distributions.Product(Fill(VariateTransformRules.StandardUvNormal(), 3))
+        @test @inferred(Distributions.Product(VariateTransformations.StandardMvNormal{Float32}(3))) isa Distributions.Product{Continuous,VariateTransformations.StandardUvNormal{Float32}}
+        @test @inferred(Distributions.Product(VariateTransformations.StandardMvNormal{Float64}(3))) isa Distributions.Product{Continuous,VariateTransformations.StandardUvNormal{Float64}}
+        @test @inferred(Distributions.Product(VariateTransformations.StandardMvNormal{Float64}(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvNormal(), 3))
+        @test @inferred(convert(Product, VariateTransformations.StandardMvNormal(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvNormal(), 3))
 
-        @test @inferred(MvNormal(VariateTransformRules.StandardMvNormal{Float32}(3))) isa MvNormal{Float32}
-        @test @inferred(MvNormal(VariateTransformRules.StandardMvNormal{Float64}(3))) isa MvNormal{Float64}
-        @test @inferred(MvNormal(VariateTransformRules.StandardMvNormal{Float64}(3))) == MvNormal(ScalMat(3, 1.0))
-        @test @inferred(convert(MvNormal, VariateTransformRules.StandardMvNormal(3))) == MvNormal(ScalMat(3, 1.0))
+        @test @inferred(MvNormal(VariateTransformations.StandardMvNormal{Float32}(3))) isa MvNormal{Float32}
+        @test @inferred(MvNormal(VariateTransformations.StandardMvNormal{Float64}(3))) isa MvNormal{Float64}
+        @test @inferred(MvNormal(VariateTransformations.StandardMvNormal{Float64}(3))) == MvNormal(ScalMat(3, 1.0))
+        @test @inferred(convert(MvNormal, VariateTransformations.StandardMvNormal(3))) == MvNormal(ScalMat(3, 1.0))
 
-        d = VariateTransformRules.StandardMvNormal(3)
+        d = VariateTransformations.StandardMvNormal(3)
         dref = MvNormal(ScalMat(3, 1.0))
 
         @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
@@ -107,11 +107,11 @@ using StableRNGs
         @test @inferred(length(d)) == length(dref)
         @test @inferred(size(d)) == size(dref)
 
-        @test @inferred(view(VariateTransformRules.StandardMvNormal{Float32}(7), 3)) isa VariateTransformRules.StandardUvNormal{Float32}
-        @test_throws BoundsError view(VariateTransformRules.StandardMvNormal{Float32}(7), 9)
-        @test @inferred(view(VariateTransformRules.StandardMvNormal{Float32}(7), 2:4)) isa VariateTransformRules.StandardMvNormal{Float32}
-        @test view(VariateTransformRules.StandardMvNormal{Float32}(7), 2:4) == VariateTransformRules.StandardMvNormal{Float32}(3)
-        @test_throws BoundsError view(VariateTransformRules.StandardMvNormal{Float32}(7), 2:8)
+        @test @inferred(view(VariateTransformations.StandardMvNormal{Float32}(7), 3)) isa VariateTransformations.StandardUvNormal{Float32}
+        @test_throws BoundsError view(VariateTransformations.StandardMvNormal{Float32}(7), 9)
+        @test @inferred(view(VariateTransformations.StandardMvNormal{Float32}(7), 2:4)) isa VariateTransformations.StandardMvNormal{Float32}
+        @test view(VariateTransformations.StandardMvNormal{Float32}(7), 2:4) == VariateTransformations.StandardMvNormal{Float32}(3)
+        @test_throws BoundsError view(VariateTransformations.StandardMvNormal{Float32}(7), 2:8)
         
         @test @inferred(params(d)) == params(dref)
         @test @inferred(partype(d)) == partype(dref)
