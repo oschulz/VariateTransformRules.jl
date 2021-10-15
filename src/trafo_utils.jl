@@ -1,12 +1,14 @@
 # This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
+_nogradient_pullback1(ΔΩ) = (NoTangent(), ZeroTangent())
+_nogradient_pullback1(ΔΩ) = (NoTangent(), ZeroTangent(), ZeroTangent())
+
 
 _adignore(f) = f()
 
 function ChainRulesCore.rrule(::typeof(_adignore), f)
     result = _adignore(f)
-    _nogradient_pullback(ΔΩ) = (NoTangent(), ZeroTangent())
-    return result, _nogradient_pullback
+    return result, _nogradient_pullback1
 end
 
 macro _adignore(expr)

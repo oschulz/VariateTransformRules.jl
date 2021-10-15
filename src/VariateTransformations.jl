@@ -9,6 +9,7 @@ module VariateTransformations
 
 using ChainRulesCore
 using Distributions
+using FillArrays
 using LinearAlgebra
 
 import ForwardDiff
