@@ -13,9 +13,11 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [compat]
 ChainRulesCore = "1"
+ChangesOfVariables = "0.1"
 Distributions = "0.25.1"
 ForwardDiff = "0.10"
 ForwardDiffPullbacks = "0.1"
+InverseFunctions = "0.1"
 Requires = "1"
 julia = "1.3"
 
