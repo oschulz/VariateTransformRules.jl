@@ -1,68 +1,10 @@
 # This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
 
-# This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
-
-
 const StdUvDist = Union{StandardUvUniform, StandardUvNormal}
 const StdMvDist = Union{StandardMvUniform, StandardMvNormal}
 
 
-
-
-
-
-struct DistributionTransform{
-    VT <: AbstractValueShape,
-    VF <: AbstractValueShape,
-    DT <: ContinuousDistribution,
-    DF <: ContinuousDistribution
-} <: VariateTransform{VT,VF}
-    target_dist::DT
-    source_dist::DF
-    _valshape::VT
-    _varshape::VF
-end
-
-# ToDo: Add specialized dist trafo types able to cache relevant quantities, etc.
-
-
-function _distrafo_ctor_impl(target_dist::Distribution, source_dist::Distribution)
-    @argcheck eff_totalndof(target_dist) == eff_totalndof(source_dist)
-    _valshape = varshape(target_dist)
-    _varshape = varshape(source_dist)
-    DistributionTransform(target_dist, source_dist, _valshape, _varshape)
-end
-
-DistributionTransform(target_dist::Distribution{VF,Continuous}, source_dist::Distribution{VF,Continuous}) where VF =
-    _distrafo_ctor_impl(target_dist, source_dist)
-
-DistributionTransform(target_dist::Distribution{Multivariate,Continuous}, source_dist::Distribution{VF,Continuous}) where VF =
-    _distrafo_ctor_impl(target_dist, source_dist)
-
-DistributionTransform(target_dist::Distribution{VF,Continuous}, source_dist::Distribution{Multivariate,Continuous}) where VF =
-    _distrafo_ctor_impl(target_dist, source_dist)
-
-DistributionTransform(target_dist::Distribution{Multivariate,Continuous}, source_dist::Distribution{Multivariate,Continuous}) =
-    _distrafo_ctor_impl(target_dist, source_dist)
-
-
-show_distribution(io::IO, d::Distribution) = show(io, d)
-function show_distribution(io::IO, d::NamedTupleDist)
-    print(io, Base.typename(typeof(d)).name, "{")
-    show(io, propertynames(d))
-    print(io, "}(…)")
-end
-    
-function Base.show(io::IO, trafo::DistributionTransform)
-    print(io, Base.typename(typeof(trafo)).name, "(")
-    show_distribution(io, trafo.target_dist)
-    print(io, ", ")
-    show_distribution(io, trafo.source_dist)
-    print(io, ")")
-end
-
-Base.show(io::IO, M::MIME"text/plain", trafo::DistributionTransform) = show(io, trafo)
 
 # apply_dist_trafo(trg_d, src_d, src_v, prev_ladj)
 function apply_dist_trafo end
@@ -75,24 +17,6 @@ apply_dist_trafo_noladj(trg_d::Distribution, src_d::Distribution, src_v::Any) = 
 end
 @inline function ChainRulesCore.rrule(::typeof(apply_dist_trafo_noladj), trg_d::Distribution{Univariate}, src_d::Distribution{Univariate}, src_v::Any)
     ChainRulesCore.rrule(fwddiff(apply_dist_trafo_noladj), trg_d, src_d, src_v)
-end
-
-
-import Base.∘
-function ∘(a::DistributionTransform, b::DistributionTransform)
-    @argcheck a.source_dist == b.target_dist
-    DistributionTransform(a.target_dist, b.source_dist)
-end
-
-Base.inv(trafo::DistributionTransform) = DistributionTransform(trafo.source_dist, trafo.target_dist)
-
-
-ValueShapes.varshape(trafo::DistributionTransform) = trafo._varshape
-ValueShapes.valshape(trafo::DistributionTransform) = trafo._valshape
-
-
-function apply_vartrafo_impl(trafo::DistributionTransform, v::Any, prev_ladj::OptionalLADJ)
-    apply_dist_trafo(trafo.target_dist, trafo.source_dist, v, prev_ladj)
 end
 
 
@@ -441,10 +365,105 @@ function _transformed_ntd_elshape(d::Distribution)
     vs
 end
 
+function _transformed_ntd_accessors(d::NamedTupleDist{names}) where names
+    shapes = map(_transformed_ntd_elshape, values(d))
+    vs = NamedTupleShape(NamedTuple{names}(shapes))
+    values(vs)
+end
 
+function apply_dist_trafo(trg_d::StdMvDist, src_d::ValueShapes.UnshapedNTD, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    src_vs = varshape(src_d.shaped)
+    @argcheck length(src_d) == length(eachindex(src_v))
+    trg_accessors = _transformed_ntd_accessors(src_d.shaped)
+    init_ladj = ismissing(prev_ladj) ? missing : zero(Float32)
+    rs = map((acc, sd) -> _ntdistelem_to_stdmv(trg_d, sd, src_v, acc, init_ladj), trg_accessors, values(src_d.shaped))
+    trg_v = vcat(map(r -> r.v, rs)...)
+    trafo_ladj = !ismissing(prev_ladj) ? sum(map(r -> r.ladj, rs)) : missing
+    var_trafo_result(trg_v, src_v, trafo_ladj, prev_ladj)
+end
+
+function apply_dist_trafo(trg_d::StdMvDist, src_d::NamedTupleDist, src_v::Union{NamedTuple,ShapedAsNT}, prev_ladj::OptionalLADJ)
+    src_v_unshaped = unshaped(src_v, varshape(src_d))
+    apply_dist_trafo(trg_d, unshaped(src_d), src_v_unshaped, prev_ladj)
+end
 
 function _stdmv_to_ntdistelem(td::Distribution, src_d::StdMvDist, src_v::AbstractVector{<:Real}, src_acc::ValueAccessor, init_ladj::OptionalLADJ)
     sd = view(src_d, ValueShapes.view_range(Base.OneTo(length(src_d)), src_acc))
     sv = view(src_v, ValueShapes.view_range(axes(src_v, 1), src_acc))
     apply_dist_trafo(td, sd, sv, init_ladj)
+end
+
+function _stdmv_to_ntdistelem(td::ConstValueDist, src_d::StdMvDist, src_v::AbstractVector{<:Real}, src_acc::ValueAccessor, init_ladj::OptionalLADJ)
+    (v = Bool[], ladj = init_ladj)
+end
+
+function apply_dist_trafo(trg_d::ValueShapes.UnshapedNTD, src_d::StdMvDist, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    trg_vs = varshape(trg_d.shaped)
+    @argcheck length(src_d) == length(eachindex(src_v))
+    src_accessors = _transformed_ntd_accessors(trg_d.shaped)
+    init_ladj = ismissing(prev_ladj) ? missing : zero(Float32)
+    rs = map((acc, td) -> _stdmv_to_ntdistelem(td, src_d, src_v, acc, init_ladj), src_accessors, values(trg_d.shaped))
+    trg_v_unshaped = vcat(map(r -> unshaped(r.v), rs)...)
+    trafo_ladj = !ismissing(prev_ladj) ? sum(map(r -> r.ladj, rs)) : missing
+    var_trafo_result(trg_v_unshaped, src_v, trafo_ladj, prev_ladj)
+end
+
+function apply_dist_trafo(trg_d::NamedTupleDist, src_d::StdMvDist, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    unshaped_result = apply_dist_trafo(unshaped(trg_d), src_d, src_v, prev_ladj)
+    (v = strip_shapedasnt(varshape(trg_d)(unshaped_result.v)), ladj = unshaped_result.ladj)
+end
+
+
+const AnyReshapedDist = Union{ReshapedDist,MatrixReshaped}
+
+function apply_dist_trafo(trg_d::Distribution{Multivariate}, src_d::AnyReshapedDist, src_v::Any, prev_ladj::OptionalLADJ)
+    src_vs = varshape(src_d)
+    @argcheck length(trg_d) == totalndof(src_vs)
+    apply_dist_trafo(trg_d, unshaped(src_d), unshaped(src_v, src_vs), prev_ladj)
+end
+
+function apply_dist_trafo(trg_d::AnyReshapedDist, src_d::Distribution{Multivariate}, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    trg_vs = varshape(trg_d)
+    @argcheck totalndof(trg_vs) == length(src_d)
+    r = apply_dist_trafo(unshaped(trg_d), src_d, src_v, prev_ladj)
+    (v = trg_vs(r.v), ladj = r.ladj)
+end
+
+function apply_dist_trafo(trg_d::AnyReshapedDist, src_d::AnyReshapedDist, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    trg_vs = varshape(trg_d)
+    src_vs = varshape(src_d)
+    @argcheck totalndof(trg_vs) == totalndof(src_vs)
+    r = apply_dist_trafo(unshaped(trg_d), unshaped(src_d), unshaped(src_v, src_vs), prev_ladj)
+    (v = trg_vs(r.v), ladj = r.ladj)
+end
+
+
+function apply_dist_trafo(trg_d::StdMvDist, src_d::UnshapedHDist, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    src_v_primary, src_v_secondary = _hd_split(src_d, src_v)
+    trg_d_primary = typeof(trg_d)(length(eachindex(src_v_primary)))
+    trg_d_secondary = typeof(trg_d)(length(eachindex(src_v_secondary)))
+    trg_v_primary, ladj_primary = apply_dist_trafo(trg_d_primary, _hd_pridist(src_d), src_v_primary, prev_ladj)
+    trg_v_secondary, ladj = apply_dist_trafo(trg_d_secondary, _hd_secdist(src_d, src_v_primary), src_v_secondary, ladj_primary)
+    trg_v = vcat(trg_v_primary, trg_v_secondary)
+    (v = trg_v, ladj = ladj)
+end
+
+function apply_dist_trafo(trg_d::StdMvDist, src_d::HierarchicalDistribution, src_v::Any, prev_ladj::OptionalLADJ)
+    src_v_unshaped = unshaped(src_v, varshape(src_d))
+    apply_dist_trafo(trg_d, unshaped(src_d), src_v_unshaped, prev_ladj)
+end
+
+function apply_dist_trafo(trg_d::UnshapedHDist, src_d::StdMvDist, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    src_v_primary, src_v_secondary = _hd_split(trg_d, src_v)
+    src_d_primary = typeof(src_d)(length(eachindex(src_v_primary)))
+    src_d_secondary = typeof(src_d)(length(eachindex(src_v_secondary)))
+    trg_v_primary, ladj_primary = apply_dist_trafo(_hd_pridist(trg_d), src_d_primary, src_v_primary, prev_ladj)
+    trg_v_secondary, ladj = apply_dist_trafo(_hd_secdist(trg_d, trg_v_primary), src_d_secondary, src_v_secondary, ladj_primary)
+    trg_v = vcat(trg_v_primary, trg_v_secondary)
+    (v = trg_v, ladj = ladj)
+end
+
+function apply_dist_trafo(trg_d::HierarchicalDistribution, src_d::StdMvDist, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
+    unshaped_result = apply_dist_trafo(unshaped(trg_d), src_d, src_v, prev_ladj)
+    (v = varshape(trg_d)(unshaped_result.v), ladj = unshaped_result.ladj)
 end
