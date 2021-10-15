@@ -1,96 +1,117 @@
 # This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
-
+#= !!!!!!!!!!!!! move
 const StdUvDist = Union{StandardUvUniform, StandardUvNormal}
 const StdMvDist = Union{StandardMvUniform, StandardMvNormal}
+=#
 
 
+"""
+    transform_variate(
+        trg::ContinuousDistribution,
+        src::ContinuousDistribution,
+        x
+    )
 
-# apply_dist_trafo(trg_d, src_d, src_v, prev_ladj)
-function apply_dist_trafo end
-
-apply_dist_trafo_noladj(trg_d::Distribution, src_d::Distribution, src_v::Any) = apply_dist_trafo(trg_d, src_d, src_v, missing).v
-
-# Use ForwardDiff for univariate distribution transformations:
-@inline function ChainRulesCore.rrule(::typeof(apply_dist_trafo), trg_d::Distribution{Univariate}, src_d::Distribution{Univariate}, src_v::Any, prev_ladj::OptionalLADJ)
-    ChainRulesCore.rrule(fwddiff(apply_dist_trafo), trg_d, src_d, src_v, prev_ladj)
-end
-@inline function ChainRulesCore.rrule(::typeof(apply_dist_trafo_noladj), trg_d::Distribution{Univariate}, src_d::Distribution{Univariate}, src_v::Any)
-    ChainRulesCore.rrule(fwddiff(apply_dist_trafo_noladj), trg_d, src_d, src_v)
-end
-
+Transforms a value `x` drawn from distribution `src` into a value drawn
+from distribution `trg`.
+"""
+function transform_variate end
+export transform_variate
 
 
-const _StdDistType = Union{Uniform, Normal}
-
-_trg_disttype(::Type{Uniform}, ::Type{Univariate}) = StandardUvUniform
-_trg_disttype(::Type{Uniform}, ::Type{Multivariate}) = StandardMvUniform
-_trg_disttype(::Type{Normal}, ::Type{Univariate}) = StandardUvNormal
-_trg_disttype(::Type{Normal}, ::Type{Multivariate}) = StandardMvNormal
-
-function _trg_dist(disttype::Type{<:_StdDistType}, source_dist::Distribution{Univariate,Continuous})
-    trg_dt = _trg_disttype(disttype, Univariate)
-    trg_dt()
-end
-
-function _trg_dist(disttype::Type{<:_StdDistType}, source_dist::Distribution{Multivariate,Continuous})
-    trg_dt = _trg_disttype(disttype, Multivariate)
-    trg_dt(eff_totalndof(source_dist))
-end
-
-function _trg_dist(disttype::Type{<:_StdDistType}, source_dist::ContinuousDistribution)
-    trg_dt = _trg_disttype(disttype, Multivariate)
-    trg_dt(eff_totalndof(source_dist))
+# Use ForwardDiffPullbacks for univariate distribution transformations:
+@inline function ChainRulesCore.rrule(::typeof(transform_variate), trg::Distribution{Univariate}, src::Distribution{Univariate}, x::Any)
+    ChainRulesCore.rrule(fwddiff(transform_variate), trg_d, src_d, src_v)
 end
 
 
-function DistributionTransform(disttype::Type{<:_StdDistType}, source_dist::ContinuousDistribution)
-    trg_d = _trg_dist(disttype, source_dist)
-    DistributionTransform(trg_d, source_dist)
-end
+"""
+    VariateTransformation.eff_ndof(d::Distribution)
+
+Returns the effective number of degrees of freedom of variates of
+distribution `d`.
+
+The effective NDOF my differ from the length of the variates. For example,
+the effective NDOF for a Dirichlet distribution with variates of length `n`
+is `n - 1`.
+
+Also see [`VariateTransformation.check_compatibility`](@ref).
+"""
+function eff_ndof end
 
 
+"""
+    VariateTransformation.check_compatibility(trg::Distribution, src::Distribution)
 
-function std_dist_from(src_d::Distribution)
-    throw(ArgumentError("No standard intermediate distribution defined to transform from $(typeof(src_d).name)"))
-end
+Check if `trg` and `src` are compatible in respect to variate
+transformations, throws an `ArgumentError` if not.
 
-function std_dist_to(trg_d::Distribution)
-    throw(ArgumentError("No standard intermediate distribution defined to transform into $(typeof(trg_d).name)"))
-end
+Distributions are considered compatible if their variates have the same
+effective number of degrees of freedom according to
+[`VariateTransformation.eff_ndof`](@ref).
+"""
+function check_compatibility end
 
 
-@inline function _intermediate_std_dist(trg_d::Distribution, src_d::Distribution)
-    _select_intermediate_dist(std_dist_to(trg_d), std_dist_from(src_d))
-end
-
-@inline _intermediate_std_dist(::Union{StdUvDist,StdMvDist}, src_d::Distribution) = std_dist_from(src_d)
-
-@inline _intermediate_std_dist(trg_d::Distribution, ::Union{StdUvDist,StdMvDist}) = std_dist_to(trg_d)
-
-function _intermediate_std_dist(::Union{StdUvDist,StdMvDist}, ::Union{StdUvDist,StdMvDist})
-    throw(ArgumentError("Direct conversions must be used between standard intermediate distributions"))
-end
-
-@inline _select_intermediate_dist(a::D, ::D) where D<:Union{StdUvDist,StdMvDist} = a
-@inline _select_intermediate_dist(a::D, ::D) where D<:Union{StandardUvUniform,StandardMvUniform} = a
-@inline _select_intermediate_dist(a::Union{StandardUvUniform,StandardMvUniform}, ::Union{StdUvDist,StdMvDist}) = a
-@inline _select_intermediate_dist(::Union{StdUvDist,StdMvDist}, b::Union{StandardUvUniform,StandardMvUniform}) = b
-
-_check_conv_eff_totalndof(trg_d::Uniform, src_d::Uniform) = nothing
-
-function _check_conv_eff_totalndof(trg_d::Distribution, src_d::Distribution)
-    trg_d_n = eff_totalndof(trg_d)
-    src_d_n = eff_totalndof(src_d)
+function check_compatibility(trg_d::Distribution, src_d::Distribution)
+    trg_d_n = eff_ndof(trg_d)
+    src_d_n = eff_ndof(src_d)
     if trg_d_n != src_d_n
         throw(ArgumentError("Can't convert to $(typeof(trg_d).name) with $(trg_d_n) eff. DOF from $(typeof(src_d).name) with $(src_d_n) eff. DOF"))
     end
     nothing
 end
 
+
+"""
+    VariateTransformation.default_intermediate(d::Distribution)
+
+Default intermediate transformation to use when transforming between
+`d` and another distribution.
+
+The default intermediate should be the [`StandardDist`](@ref) that variates
+of `d` are easiest to transform from/to.
+
+See [`VariateTransformation.intermediate`](@ref).
+"""
+function default_intermediate end
+
+
+"""
+    VariateTransformation.intermediate(trg::Distribution, src::Distribution)
+
+`intermediate(trg, src)` determines the [`StandardDist`](@ref) to use in
+between if variates can't be transformed from directly directly.
+
+Uses [`VariateTransformation.default_intermediate`](@ref) of `src` and
+`trg`. If `src` and `trg` have different default intermediates, the uniform
+distribution is selected.
+"""
+function intermediate end
+
+@inline intermediate(::StandardDist, src::Distribution) = intermediate(src)
+
+@inline intermediate(trg::Distribution, ::StandardDist) = intermediate(trg)
+
+function intermediate(::StandardDist, ::StandardDist)
+    throw(ArgumentError("Direct conversions must be used between standard intermediate distributions"))
+end
+
+@inline function intermediate(trg_:Distribution, src::Distribution)
+    _select_intermediate(intermediate(trg), intermediate(src))
+end
+
+@inline _select_intermediate(a::D, ::D) where D<:Union{StdUvDist,StdMvDist} = a
+@inline _select_intermediate(a::D, ::D) where D<:Union{StandardUvUniform,StandardMvUniform} = a
+@inline _select_intermediate(a::Union{StandardUvUniform,StandardMvUniform}, ::Union{StdUvDist,StdMvDist}) = a
+@inline _select_intermediate(::Union{StdUvDist,StdMvDist}, b::Union{StandardUvUniform,StandardMvUniform}) = b
+
+
+
 function apply_dist_trafo(trg_d::Distribution, src_d::Distribution, src_v::Any, prev_ladj::OptionalLADJ)
-    _check_conv_eff_totalndof(trg_d, src_d)
-    intermediate_d = _intermediate_std_dist(trg_d, src_d)
+    check_compatibility(trg_d, src_d)
+    intermediate_d = intermediate(trg_d, src_d)
     intermediate_v, intermediate_ladj = apply_dist_trafo(intermediate_d, src_d, src_v, prev_ladj)
     apply_dist_trafo(trg_d, intermediate_d, intermediate_v, intermediate_ladj)
 end
@@ -188,13 +209,13 @@ end
 end
 
 
-std_dist_from(src_d::Distribution{Univariate,Continuous}) = StandardUvUniform()
+intermediate(src_d::Distribution{Univariate,Continuous}) = StandardUvUniform()
 
 function apply_dist_trafo(::StandardUvUniform, src_d::Distribution{Univariate,Continuous}, src_v::Real, prev_ladj::OptionalLADJ)
     _eval_dist_trafo_func(_trafo_cdf, src_d, src_v, prev_ladj)
 end
 
-std_dist_to(trg_d::Distribution{Univariate,Continuous}) = StandardUvUniform()
+intermediate(trg_d::Distribution{Univariate,Continuous}) = StandardUvUniform()
 
 function apply_dist_trafo(trg_d::Distribution{Univariate,Continuous}, ::StandardUvUniform, src_v::Real, prev_ladj::OptionalLADJ)
     TV = float(typeof(src_v))
@@ -224,8 +245,8 @@ end
 # be useful if StandardUvNormal would be a better standard intermediate than
 # StandardUvUniform for some other uniform distributions as well.
 #
-#     std_dist_from(src_d::Normal) = StandardUvNormal()
-#     std_dist_to(trg_d::Normal) = StandardUvNormal()
+#     intermediate(src_d::Normal) = StandardUvNormal()
+#     intermediate(trg_d::Normal) = StandardUvNormal()
 
 @inline apply_dist_trafo(trg_d::Normal, src_d::Normal, src_v::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg_d, src_d, src_v, prev_ladj)
 @inline apply_dist_trafo(trg_d::StandardUvNormal, src_d::Normal, src_v::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg_d, src_d, src_v, prev_ladj)
@@ -236,17 +257,17 @@ end
 
 
 @inline function apply_dist_trafo(trg_d::StandardMvUniform, src_d::StandardMvNormal, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(StandardUvUniform(), StandardUvNormal(), src_v, prev_ladj)
 end
 
 @inline function apply_dist_trafo(trg_d::StandardMvNormal, src_d::StandardMvUniform, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(StandardUvNormal(), StandardUvUniform(), src_v, prev_ladj)
 end
 
 
-std_dist_from(src_d::MvNormal) = StandardMvNormal(length(src_d))
+intermediate(src_d::MvNormal) = StandardMvNormal(length(src_d))
 
 function apply_dist_trafo(trg_d::StandardMvNormal, src_d::MvNormal, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
     @argcheck length(trg_d) == length(src_d)
@@ -256,7 +277,7 @@ function apply_dist_trafo(trg_d::StandardMvNormal, src_d::MvNormal, src_v::Abstr
     var_trafo_result(trg_v, src_v, trafo_ladj, prev_ladj)
 end
 
-std_dist_to(trg_d::MvNormal) = StandardMvNormal(length(trg_d))
+intermediate(trg_d::MvNormal) = StandardMvNormal(length(trg_d))
 
 function apply_dist_trafo(trg_d::MvNormal, src_d::StandardMvNormal, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
     @argcheck length(trg_d) == length(src_d)
@@ -267,11 +288,11 @@ function apply_dist_trafo(trg_d::MvNormal, src_d::StandardMvNormal, src_v::Abstr
 end
 
 
-eff_totalndof(d::Dirichlet) = length(d) - 1
-eff_totalndof(d::DistributionsAD.TuringDirichlet) = length(d) - 1
+eff_ndof(d::Dirichlet) = length(d) - 1
+eff_ndof(d::DistributionsAD.TuringDirichlet) = length(d) - 1
 
-std_dist_to(trg_d::Dirichlet) = StandardMvUniform(eff_totalndof(trg_d))
-std_dist_to(trg_d::DistributionsAD.TuringDirichlet) = StandardMvUniform(eff_totalndof(trg_d))
+intermediate(trg_d::Dirichlet) = StandardMvUniform(eff_ndof(trg_d))
+intermediate(trg_d::DistributionsAD.TuringDirichlet) = StandardMvUniform(eff_ndof(trg_d))
 
 
 function apply_dist_trafo(trg_d::Dirichlet, src_d::StandardMvUniform, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
@@ -321,27 +342,27 @@ function _product_dist_trafo_impl(trg_ds, src_ds, src_v::AbstractVector{<:Real},
 end
 
 function apply_dist_trafo(trg_d::Distributions.Product, src_d::Distributions.Product, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(trg_d.v, src_d.v, src_v, prev_ladj)
 end
 
 function apply_dist_trafo(trg_d::StandardMvUniform, src_d::Distributions.Product, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(StandardUvUniform(), src_d.v, src_v, prev_ladj)
 end
 
 function apply_dist_trafo(trg_d::StandardMvNormal, src_d::Distributions.Product, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(StandardUvNormal(), src_d.v, src_v, prev_ladj)
 end
 
 function apply_dist_trafo(trg_d::Distributions.Product, src_d::StandardMvUniform, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(trg_d.v, StandardUvUniform(), src_v, prev_ladj)
 end
 
 function apply_dist_trafo(trg_d::Distributions.Product, src_d::StandardMvNormal, src_v::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
-    @_adignore @argcheck eff_totalndof(trg_d) == eff_totalndof(src_d)
+    @_adignore @argcheck eff_ndof(trg_d) == eff_ndof(src_d)
     _product_dist_trafo_impl(trg_d.v, StandardUvNormal(), src_v, prev_ladj)
 end
 
@@ -358,10 +379,10 @@ end
 
 
 _transformed_ntd_elshape(d::Distribution{Univariate}) = varshape(d)
-_transformed_ntd_elshape(d::Distribution{Multivariate}) = ArrayShape{Real}(eff_totalndof(d))
+_transformed_ntd_elshape(d::Distribution{Multivariate}) = ArrayShape{Real}(eff_ndof(d))
 function _transformed_ntd_elshape(d::Distribution)
     vs = varshape(d)
-    @argcheck totalndof(vs) == eff_totalndof(d)
+    @argcheck totalndof(vs) == eff_ndof(d)
     vs
 end
 
