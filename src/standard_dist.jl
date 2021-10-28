@@ -50,13 +50,19 @@ end
 
 
 Statistics.mean(d::StandardDist{D,T,0}) where {D,T} = mean(nonstddist(d))
-Statistics.mean(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mean(StandardDist{Uniform,T,0}), length(d))
+Statistics.mean(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mean(StandardDist{Uniform,T,0}), size(d)...)
 
 Statistics.var(d::StandardDist{D,T,0}) where {D,T} = var(nonstddist(d))
-Statistics.var(d::StandardDist{D,T,N}) where {D,T,N} = Fill(var(StandardDist{Uniform,T,0}), length(d))
+Statistics.var(d::StandardDist{D,T,N}) where {D,T,N} = Fill(var(StandardDist{Uniform,T,0}), size(d)...)
 
 # ToDo: Define cov for N!=1?
 Statistics.cov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(var(d))
+Distributions.invcov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(Fill(inv(var(StandardDist{D,T,0})), length(d)))
+Distributions.logdetcov(d::StandardDist{D,T,1}) where {D,T} = log(var(StandardDist{D,T,0})) + length(d)
+
+Statistics.mode(d::StandardDist{D,T,0}) where {D,T} = mode(nonstddist(d))
+Statistics.mode(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mode(StandardDist{Uniform,T,0}), size(d)...)
+StatsBase.modes(d::StandardDist) = [mode(d)]
 
 
 Base.rand(rng::AbstractRNG, d::StandardDist{D,T,0}) where {D,T} = rand(rng, nonstddist(d))

@@ -69,20 +69,13 @@ Distributions.cf(d::StandardDist{Uniform,T,0}, t::Real) where T = cf(nonstddist(
 Base.rand(rng::AbstractRNG, d::StandardDist{Uniform,T,0}) where T = rand(rng, float(T))
 
 
-
-
-
 # Not applicable:
 # # StatsBase.params(d::StandardMvUniform)
 # # @inline Distributions.partype(d::StandardDist{Uniform,T,N})
 
 
-StatsBase.mode(d::StandardMvUniform) = mean(d)
-StatsBase.modes(d::StandardMvUniform) = Fill(mean(d), 0)
-
-Distributions.invcov(d::StandardDist{Uniform,T,N}) where T = Diagonal(Fill(inv(var(StandardDist{Uniform,T,0})), length(d)))
-Distributions.logdetcov(d::StandardDist{Uniform,T,N}) where T = logdet(cov(d))
-
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CONT HERE
+  
 StatsBase.entropy(d::StandardDist{Uniform,T,N}) where T = zero(T)
 
 
