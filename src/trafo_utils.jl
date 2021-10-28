@@ -1,7 +1,7 @@
 # This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
 _nogradient_pullback1(ΔΩ) = (NoTangent(), ZeroTangent())
-_nogradient_pullback1(ΔΩ) = (NoTangent(), ZeroTangent(), ZeroTangent())
+_nogradient_pullback2(ΔΩ) = (NoTangent(), ZeroTangent(), ZeroTangent())
 
 
 _adignore(f) = f()
