@@ -25,7 +25,7 @@ import ForwardDiff
         (Exponential, Float64, (5,), product_distribution(fill(Exponential(1.0), 5))),
         (Exponential, Float64, (2, 3), MatrixReshaped(product_distribution(fill(Exponential(1.0), 6)), 2, 3)),
     ]
-        @testset "StandardDist{D,T}(sz...)" begin
+        @testset "StandardDist{$D,$T}($(join(sz,",")))" begin
             N = length(sz)
 
             @test @inferred(StandardDist{D}(sz...)) isa StandardDist{D,Float64}
@@ -70,7 +70,19 @@ import ForwardDiff
 
             if size(d) == ()
                 for x in [minimum(dref), quantile(dref, 1//3), quantile(dref, 1//2), quantile(dref, 2//3), maximum(dref)]
-                    for f in [logpdf, pdf, gradlogpdf, logcdf, cdf, logccdf, ccdf, quantile, cquantile, invlogcdf, invlogccdf]
+                    for f in [logpdf, pdf, gradlogpdf, logcdf, cdf, logccdf, ccdf]
+                        @test @inferred(f(d, x)) ≈ f(dref, x)
+                    end
+                end
+
+                for x in [0, 1//3, 1//2, 2//3, 1]
+                    for f in [quantile, cquantile]
+                        @test @inferred(f(d, x)) ≈ f(dref, x)
+                    end
+                end
+
+                for x in log.([0, 1//3, 1//2, 2//3, 1])
+                    for f in [invlogcdf, invlogccdf]
                         @test @inferred(f(d, x)) ≈ f(dref, x)
                     end
                 end
