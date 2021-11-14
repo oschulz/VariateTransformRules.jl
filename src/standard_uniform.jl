@@ -72,7 +72,7 @@ Distributions.cf(d::StandardDist{Uniform,T,0}, t::Real) where T = cf(nonstddist(
 
 Distributions.gradlogpdf(d::StandardDist{Uniform,T,0}, x::Real) where T = zero(x)
 
-function Distributions.gradlogpdf(d::StandardDist{Uniform,T,N}, x::AbstractArray{T,N}) where {T,N}
+function Distributions.gradlogpdf(d::StandardDist{Uniform,T,N}, x::AbstractArray{<:Real,N}) where {T,N}
     _checkvarsize(d, x)
     zero(x)
 end

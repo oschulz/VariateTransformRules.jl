@@ -14,7 +14,7 @@ import ForwardDiff
 
     for (D, T, sz, dref) in [
         (Uniform, Float64, (), Uniform()),
-        #(Uniform, Float64, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
+        (Uniform, Float64, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
         #(Uniform, Float64, (5,), MatrixReshaped(product_distribution(fill(Uniform(0.0, 1.0), 6)), 2, 3)),
         (Normal, Float64, (), Normal()),
         (Normal, Float32, (), Normal(0.0f0, 1.0f0)),
@@ -22,7 +22,7 @@ import ForwardDiff
         (Normal, Float32, (5,), MvNormal(fill(1.0f0, 5))),
         #(Normal, Float32, (2, 3), MatrixReshaped(MvNormal(fill(1.0f0, 6)), 2, 3)),
         #(Normal, Float42, (2, 3), MatrixReshaped(MvNormal(fill(1.0, 6)), 2, 3)),
-        #(Exponential, Float64, (), Exponential()),
+        (Exponential, Float64, (), Exponential()),
         #(Exponential, Float64, (5,), product_distribution(fill(Exponential(1.0), 5))),
         #(Exponential, Float64, (5,), MatrixReshaped(product_distribution(fill(Exponential(1.0), 6)), 2, 3)),
     ]
@@ -51,7 +51,7 @@ import ForwardDiff
             @test @inferred(params(d)) == ()
             @test @inferred(partype(d)) == partype(dref)
 
-            for f in [minimum, maximum, location, scale, mean, median, mode, modes, var, std, skewness, kurtosis, entropy]
+            for f in [minimum, maximum, mean, median, mode, modes, var, std, skewness, kurtosis, location, scale, entropy]
                 supported_by_dref = try f(dref); true catch MethodError; false; end
                 if supported_by_dref
                     @test @inferred(f(d)) ≈ f(dref)

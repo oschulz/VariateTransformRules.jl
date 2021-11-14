@@ -66,7 +66,19 @@ function Distributions.insupport(d::StandardDist{D,T,N}, x::AbstractArray{U,N}) 
     all(xi -> insupport(StandardDist{D,T}(), xi), x)
 end
 
-for f in (:(Base.minimum), :(Base.maximum), :(Statistics.mean), :(StatsBase.mode), :(Statistics.var), :(Statistics.std))
+for f in (
+    :(Base.minimum),
+    :(Base.maximum),
+    :(Statistics.mean),
+    :(Statistics.median),
+    :(StatsBase.mode),
+    :(Statistics.var),
+    :(Statistics.std),
+    :(StatsBase.skewness),
+    :(StatsBase.kurtosis),
+    :(Distributions.location),    
+    :(Distributions.scale),    
+)
     @eval begin
         ($f)(d::StandardDist{D,T,0}) where {D,T} = ($f)(nonstddist(d))
         ($f)(d::StandardDist{D,T,N}) where {D,T,N} = Fill(($f)(StandardDist{D,T}()), size(d)...)
@@ -114,7 +126,7 @@ end
 
 Distributions.gradlogpdf(d::StandardDist{D,T,0}, x::Real) where {D,T} = gradlogpdf(nonstddist(d), x)
 
-function Distributions.gradlogpdf(d::StandardDist{D,T,N}, x::AbstractArray{<:Real}) where {D,T,N}
+function Distributions.gradlogpdf(d::StandardDist{D,T,N}, x::AbstractArray{<:Real,N}) where {D,T,N}
     _checkvarsize(d, x)
     gradlogpdf.(StandardDist{D,T,0}(), x)
 end
