@@ -171,17 +171,22 @@ function Distributions._pdf(d::StandardDist{D,T,N}, x::AbstractArray{U,N}) where
 end
 
 
-@inline Distributions.logcdf(d::StandardDist, x::Real) = logcdf(nonstddist(d), x)
-@inline Distributions.cdf(d::StandardDist, x::Real) = cdf(nonstddist(d), x)
-@inline Distributions.logccdf(d::StandardDist, x::Real) = logccdf(nonstddist(d), x)
-@inline Distributions.ccdf(d::StandardDist, x::Real) = ccdf(nonstddist(d), x)
-@inline Distributions.quantile(d::StandardDist, p::Real) = quantile(nonstddist(d), p)
-@inline Distributions.cquantile(d::StandardDist, p::Real) = cquantile(nonstddist(d), p)
-@inline Distributions.invlogcdf(d::StandardDist, p::Real) = invlogcdf(nonstddist(d), p)
-@inline Distributions.invlogccdf(d::StandardDist, p::Real) = invlogccdf(nonstddist(d), p)
-
-@inline Distributions.mgf(d::StandardDist, t::Real) = mgf(nonstddist(d), t)
-@inline Distributions.cf(d::StandardDist, t::Real) = cf(nonstddist(d), t)
+for f in (
+    :(Distributions.logcdf),
+    :(Distributions.cdf),
+    :(Distributions.logccdf),
+    :(Distributions.ccdf),
+    :(Distributions.quantile),
+    :(Distributions.cquantile),
+    :(Distributions.invlogcdf),
+    :(Distributions.invlogccdf),
+    :(Distributions.mgf),
+    :(Distributions.cf),
+)
+    @eval begin
+        @inline ($f)(d::StandardDist, x::Real) = ($f)(nonstddist(d), x)
+    end
+end
 
 
 Base.rand(rng::AbstractRNG, d::StandardDist{D,T,0}) where {D,T} = rand(rng, nonstddist(d))

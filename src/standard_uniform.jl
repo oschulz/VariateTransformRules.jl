@@ -77,4 +77,4 @@ function Distributions.gradlogpdf(d::StandardDist{Uniform,T,N}, x::AbstractArray
     zero(x)
 end
 
-Base.rand(rng::AbstractRNG, d::StandardDist{Uniform,T,0}) where T = rand(rng, float(T))
+Base.rand(rng::AbstractRNG, d::StandardDist{Uniform,T,N}) where {T,N} = rand(rng, float(T), size(d)...)

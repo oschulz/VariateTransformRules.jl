@@ -70,13 +70,9 @@ import ForwardDiff
 
             if size(d) == ()
                 for x in [minimum(dref), quantile(dref, 1//3), quantile(dref, 1//2), quantile(dref, 2//3), maximum(dref)]
-                    @test @inferred(gradlogpdf(d, x)) == gradlogpdf(dref, x)
-                    @test @inferred(logpdf(d, x)) == logpdf(dref, x)
-                    @test @inferred(pdf(d, x)) == pdf(dref, x)
-                    @test @inferred(logcdf(d, x)) == logcdf(dref, x)
-                    @test @inferred(cdf(d, x)) == cdf(dref, x)
-                    @test @inferred(logccdf(d, x)) == logccdf(dref, x)
-                    @test @inferred(ccdf(d, x)) == ccdf(dref, x)
+                    for f in [logpdf, pdf, gradlogpdf, logcdf, cdf, logccdf, ccdf, quantile, cquantile, invlogcdf, invlogccdf]
+                        @test @inferred(f(d, x)) ≈ f(dref, x)
+                    end
                 end
 
                 for p in [0.0, 0.25, 0.75, 1.0]

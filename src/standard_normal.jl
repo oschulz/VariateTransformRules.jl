@@ -37,7 +37,7 @@ StatsBase.entropy(d::StandardDist{Normal,T,0}) where T = muladd(log2π, one(T)/2
 Distributions.logpdf(d::StandardDist{Normal,T,0}, x::U) where {T,U<:Real} = muladd(abs2(x), -U(1)/U(2), -log2π/U(2))
 Distributions.pdf(d::StandardDist{Normal,T,0}, x::U) where {T,U<:Real} = invsqrt2π * exp(-abs2(x)/U(2))
 
-Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) where T = -x
+@inline Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) where T = -x
 
 @inline Distributions.logcdf(d::StandardDist{Normal,<:Real,0}, x::Real) = StatsFuns.normlogcdf(x)
 @inline Distributions.cdf(d::StandardDist{Normal,<:Real,0}, x::Real) = StatsFuns.normcdf(x)
@@ -48,7 +48,7 @@ Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) where T = -x
 @inline Distributions.invlogcdf(d::StandardDist{Normal,<:Real,0}, p::Real) = StatsFuns.norminvlogcdf(p)
 @inline Distributions.invlogccdf(d::StandardDist{Normal,<:Real,0}, p::Real) = StatsFuns.norminvlogccdf(p)
 
-Base.rand(rng::AbstractRNG, d::StandardDist{Normal,T,0}) where T = randn(rng, float(T))
+Base.rand(rng::AbstractRNG, d::StandardDist{Normal,T,N}) where {T,N} = randn(rng, float(T), size(d)...)
 
 Distributions.invcov(d::StandardDist{Normal,T,1}) where T = cov(d)
 Distributions.logdetcov(d::StandardDist{Normal,T,1}) where T = zero(T)
