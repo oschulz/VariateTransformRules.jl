@@ -14,17 +14,17 @@ import ForwardDiff
 
     for (D, T, sz, dref) in [
         (Uniform, Float64, (), Uniform()),
-        #(Uniform, Float32, (), Uniform(0.0f0, 1.0f0)),
-        #(Uniform, Float32, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
+        #(Uniform, Float64, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
         #(Uniform, Float64, (5,), MatrixReshaped(product_distribution(fill(Uniform(0.0, 1.0), 6)), 2, 3)),
-        #(Normal, Float64, (), Normal()),
+        (Normal, Float64, (), Normal()),
         (Normal, Float32, (), Normal(0.0f0, 1.0f0)),
         (Normal, Float64, (5,), MvNormal(fill(1.0, 5))),
+        (Normal, Float32, (5,), MvNormal(fill(1.0f0, 5))),
         #(Normal, Float32, (2, 3), MatrixReshaped(MvNormal(fill(1.0f0, 6)), 2, 3)),
+        #(Normal, Float42, (2, 3), MatrixReshaped(MvNormal(fill(1.0, 6)), 2, 3)),
         #(Exponential, Float64, (), Exponential()),
-        #(Exponential, Float32, (), Exponential(1.0f0)),
         #(Exponential, Float64, (5,), product_distribution(fill(Exponential(1.0), 5))),
-        #(Exponential, Float32, (5,), MatrixReshaped(product_distribution(fill(Exponential(1.0f0), 6)), 2, 3)),
+        #(Exponential, Float64, (5,), MatrixReshaped(product_distribution(fill(Exponential(1.0), 6)), 2, 3)),
     ]
         @testset "StandardDist{D,T}(sz...)" begin
             N = length(sz)

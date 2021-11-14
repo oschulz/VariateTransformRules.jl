@@ -66,26 +66,19 @@ function Distributions.insupport(d::StandardDist{D,T,N}, x::AbstractArray{U,N}) 
     all(xi -> insupport(StandardDist{D,T}(), xi), x)
 end
 
-Base.minimum(d::StandardDist{D,T,0}) where {D,T} = minimum(nonstddist(d))
-Base.minimum(d::StandardDist{D,T,N}) where {D,T,N} = Fill(minimum(StandardDist{D,T}()), size(d)...)
+for f in (:(Base.minimum), :(Base.maximum), :(Statistics.mean), :(StatsBase.mode), :(Statistics.var), :(Statistics.std))
+    @eval begin
+        ($f)(d::StandardDist{D,T,0}) where {D,T} = ($f)(nonstddist(d))
+        ($f)(d::StandardDist{D,T,N}) where {D,T,N} = Fill(($f)(StandardDist{D,T}()), size(d)...)
+    end
+end
 
-Base.maximum(d::StandardDist{D,T,0}) where {D,T} = maximum(nonstddist(d))
-Base.maximum(d::StandardDist{D,T,N}) where {D,T,N} = Fill(maximum(StandardDist{D,T}()), size(d)...)
-
-Statistics.mean(d::StandardDist{D,T,0}) where {D,T} = mean(nonstddist(d))
-Statistics.mean(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mean(StandardDist{D,T}()), size(d)...)
-
-Statistics.var(d::StandardDist{D,T,0}) where {D,T} = var(nonstddist(d))
-Statistics.var(d::StandardDist{D,T,N}) where {D,T,N} = Fill(var(StandardDist{D,T}()), size(d)...)
+StatsBase.modes(d::StandardDist) = [mode(d)]
 
 # ToDo: Define cov for N!=1?
 Statistics.cov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(var(d))
 Distributions.invcov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(Fill(inv(var(StandardDist{D,T}())), length(d)))
 Distributions.logdetcov(d::StandardDist{D,T,1}) where {D,T} = log(var(StandardDist{D,T}())) + length(d)
-
-StatsBase.mode(d::StandardDist{D,T,0}) where {D,T} = mode(nonstddist(d))
-StatsBase.mode(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mode(StandardDist{D,T}()), size(d)...)
-StatsBase.modes(d::StandardDist) = [mode(d)]
 
 StatsBase.entropy(d::StandardDist{D,T,0}) where {D,T} = entropy(nonstddist(d))
 StatsBase.entropy(d::StandardDist{D,T,N}) where {D,T,N} = length(d) * entropy(StandardDist{D,T}())
