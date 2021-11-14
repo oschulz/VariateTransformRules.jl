@@ -12,8 +12,6 @@ Base.maximum(d::StandardDist{Normal,T,0}) where T = convert(float(T), +Inf)
 
 Distributions.insupport(d::StandardDist{Normal,T,0}, x::Real) where T = !isnan(x)
 
-StatsBase.params(d::StandardDist{Normal,T,0}) where T = (mean(d), var(d))
-
 Distributions.location(d::StandardDist{Normal,T,0}) where T = mean(d)
 Distributions.scale(d::StandardDist{Normal,T,0}) where T = var(d)
 
@@ -21,7 +19,7 @@ Statistics.mean(d::StandardDist{Normal,T,0}) where T = zero(T)
 Statistics.mean(d::StandardDist{Normal,T,N}) where {T,N} = FillArrays.Zeros{T}(size(d)...)
 
 StatsBase.median(d::StandardDist{Normal}) = mean(d)
-StatsBase.mode(d::StandardDist{Normal}) = mode(d)
+StatsBase.mode(d::StandardDist{Normal}) = mean(d)
 
 StatsBase.modes(d::StandardDist{Normal,T,0}) where T = FillArrays.Zeros{T}(1)
 

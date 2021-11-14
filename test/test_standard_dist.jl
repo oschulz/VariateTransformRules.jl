@@ -6,102 +6,111 @@ using Test
 using Random, Statistics, LinearAlgebra
 using Distributions, PDMats
 using StableRNGs
+import ForwardDiff
 
 
 @testset "standard_dist" begin
     stblrng() = StableRNG(789990641)
 
-    D = Normal
-    T = Float32
-    #dref = Normal()
-    dref = MvNormal(fill(1.0f0, 5))
-    sz = (5)
+    for (D, T, sz, dref) in [
+        #(Uniform, Float64, (), Uniform()),
+        #(Uniform, Float32, (), Uniform(0.0f0, 1.0f0)),
+        #(Uniform, Float32, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
+        #(Uniform, Float64, (5,), MatrixReshaped(product_distribution(fill(Uniform(0.0, 1.0), 6)), 2, 3)),
+        #(Normal, Float64, (), Normal()),
+        (Normal, Float32, (), Normal(0.0f0, 1.0f0)),
+        (Normal, Float64, (5,), MvNormal(fill(1.0, 5))),
+        #(Normal, Float32, (2, 3), MatrixReshaped(MvNormal(fill(1.0f0, 6)), 2, 3)),
+        #(Exponential, Float64, (), Exponential()),
+        #(Exponential, Float32, (), Exponential(1.0f0)),
+        #(Exponential, Float64, (5,), product_distribution(fill(Exponential(1.0), 5))),
+        #(Exponential, Float32, (5,), MatrixReshaped(product_distribution(fill(Exponential(1.0f0), 6)), 2, 3)),
+    ]
+        @testset "StandardDist{D,T}(sz...)" begin
+            N = length(sz)
 
-    @testset "StandardDist{D,T}(sz...)" begin
-        @test @inferred(StandardDist{D}(sz...)) isa StandardDist{D,Float64}
-        @test @inferred(StandardDist{D,T}(sz...)) isa StandardDist{D,T}
-        @test @inferred(StandardDist{D,T,N}(sz...)) isa StandardDist{D,T}
-        @test @inferred(size(StandardDist{D}(sz...))) == size(dref)
-        @test @inferred(size(StandardDist{D,T}(sz...))) == size(dref)
-        @test @inferred(size(StandardDist{D,T,N}(sz...))) == size(dref)
+            @test @inferred(StandardDist{D}(sz...)) isa StandardDist{D,Float64}
+            @test @inferred(StandardDist{D,T}(sz...)) isa StandardDist{D,T}
+            @test @inferred(StandardDist{D,T,N}(sz...)) isa StandardDist{D,T}
+            @test @inferred(size(StandardDist{D}(sz...))) == size(dref)
+            @test @inferred(size(StandardDist{D,T}(sz...))) == size(dref)
+            @test @inferred(size(StandardDist{D,T,N}(sz...))) == size(dref)
 
-        d = StandardDist{D,T}(sz...)
+            d = StandardDist{D,T}(sz...)
 
-        if size(d) == ()
-            @test @inferred(VariateTransformations.nonstddist(d)) == dref
-        end
+            if size(d) == ()
+                @test @inferred(VariateTransformations.nonstddist(d)) == dref
+            end
 
-        @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
-        @test @inferred(eltype(d)) == eltype(dref)
+            @test @inferred(length(d)) == length(dref)
+            @test @inferred(size(d)) == size(dref)
 
-        @test @inferred(minimum(d)) == minimum(dref)
-        @test @inferred(maximum(d)) == maximum(dref)
-        
-        @test @inferred(params(d)) == params(dref)
-        @test @inferred(partype(d)) == partype(dref)
-        
-        @test @inferred(location(d)) == location(dref)
-        @test @inferred(scale(d)) == scale(dref)
+            @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
+            @test @inferred(eltype(d)) == eltype(dref)
 
-        @test @inferred(length(d)) == length(dref)
-        @test @inferred(size(d)) == size(dref)
+            @test @inferred(params(d)) == ()
+            @test @inferred(partype(d)) == partype(dref)
 
-        @test @inferred(mean(d)) == mean(dref)
-        @test @inferred(median(d)) == median(dref)
-        @test @inferred(mode(d)) == mode(dref)
-        @test @inferred(modes(d)) ≈ modes(dref)
-        
-        @test @inferred(var(d)) == var(dref)
-        @test @inferred(std(d)) == std(dref)
-        @test @inferred(skewness(d)) == skewness(dref)
-        @test @inferred(kurtosis(d)) == kurtosis(dref)
-        
-        @test @inferred(entropy(d)) == entropy(dref)
-        
-        xs = [minimum(dref), quantile(dref, 1//3), quantile(dref, 1//2), quantile(dref, 2//3), maximum(dref)]
+            for f in [minimum, maximum, location, scale, mean, median, mode, modes, var, std, skewness, kurtosis, entropy]
+                supported_by_dref = try f(dref); true catch MethodError; false; end
+                if supported_by_dref
+                    @test @inferred(f(d)) ≈ f(dref)
+                end
+            end
 
-        for x in xs
-            @test @inferred(gradlogpdf(d, x)) == gradlogpdf(dref, x)
+            for x in [rand(dref) for i in 1:10]
+                ref_gradlogpdf = try
+                    gradlogpdf(dref, x)
+                catch MethodError
+                    ForwardDiff.gradient(x -> logpdf(dref, x), x)
+                end
+                @test @inferred(gradlogpdf(d, x)) ≈ ref_gradlogpdf
+                @test @inferred(logpdf(d, x)) ≈ logpdf(dref, x)
+                @test @inferred(pdf(d, x)) ≈ pdf(dref, x)
+            end
 
-            @test @inferred(logpdf(d, x)) == logpdf(dref, x)
-            @test @inferred(pdf(d, x)) == pdf(dref, x)
-            @test @inferred(logcdf(d, x)) == logcdf(dref, x)
-            @test @inferred(cdf(d, x)) == cdf(dref, x)
-            @test @inferred(logccdf(d, x)) == logccdf(dref, x)
-            @test @inferred(ccdf(d, x)) == ccdf(dref, x)
-        end
+            if size(d) == ()
+                for x in [minimum(dref), quantile(dref, 1//3), quantile(dref, 1//2), quantile(dref, 2//3), maximum(dref)]
+                    @test @inferred(gradlogpdf(d, x)) == gradlogpdf(dref, x)
+                    @test @inferred(logpdf(d, x)) == logpdf(dref, x)
+                    @test @inferred(pdf(d, x)) == pdf(dref, x)
+                    @test @inferred(logcdf(d, x)) == logcdf(dref, x)
+                    @test @inferred(cdf(d, x)) == cdf(dref, x)
+                    @test @inferred(logccdf(d, x)) == logccdf(dref, x)
+                    @test @inferred(ccdf(d, x)) == ccdf(dref, x)
+                end
 
-        for p in [0.0, 0.25, 0.75, 1.0]
-            @test @inferred(quantile(d, p)) == quantile(dref, p)
-            @test @inferred(cquantile(d, p)) == cquantile(dref, p)
-        end
+                for p in [0.0, 0.25, 0.75, 1.0]
+                    @test @inferred(quantile(d, p)) == quantile(dref, p)
+                    @test @inferred(cquantile(d, p)) == cquantile(dref, p)
+                end
 
-        for t in [-3, 0, 3]
-            @test @inferred(mgf(d, t)) == mgf(dref, t)
-            @test @inferred(cf(d, t)) == cf(dref, t)
-        end
+                for t in [-3, 0, 3]
+                    @test isapprox(@inferred(mgf(d, t)), mgf(dref, t), rtol = 1e-5)
+                    @test isapprox(@inferred(cf(d, t)), cf(dref, t), rtol = 1e-5)
+                end
 
-        @test @inferred(rand(stblrng(), d)) == rand(stblrng(), d)
-        @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), d, 5)
+                @test @inferred(truncated(d, quantile(dref, 1//3), quantile(dref, 2//3))) == truncated(dref, quantile(dref, 1//3), quantile(dref, 2//3))
 
-        if size(d) == ()
-            @test @inferred(truncated(d, quantile(dref, 1//3), quantile(dref, 2//3))) == truncated(dref, quantile(dref, 1//3), quantile(dref, 2//3))
+                @test @inferred(product_distribution(fill(d, 3))) == StandardDist{D,T}(3)
+                @test @inferred(product_distribution(fill(d, 3, 4))) == StandardDist{D,T}(3, 4)
+            end
 
-            @test @inferred(product_distribution(fill(d, 3))) == StandardDist{D,T}(3)
-            @test @inferred(product_distribution(fill(d, 3, 4))) == StandardDist{D,T}(3, 4)
-        end
+            if length(size(d)) == 1
+                @test @inferred(convert(Distributions.Product, d)) isa Distributions.Product
+                d_as_prod = convert(Distributions.Product, d)
+                @test d_as_prod.v == fill(StandardDist{D,T}(), size(d)...)
+            end
 
-        if length(size(d)) == 1
-            @test @inferred(convert(Distributions.Product, d)) isa Distributions.Product
-            d_as_prod = convert(Distributions.Product, d)
-            @test d_as_prod.v == fill(StandardDist{D,T}(), size(d)...)
-        end
+            @test @inferred(rand(stblrng(), d)) == rand(stblrng(), d)
+            @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), d, 5)
 
-        @test @inferred(rand(stblrng(), d)) == rand(stblrng(), dref)
-        @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), dref, 5)
-        @test @inferred(rand!(stblrng(), d, zeros(size(d)...))) == rand!(stblrng(), dref, zeros(size(dref)...))
-        if length(size(d)) == 1
-            @test @inferred(rand!(stblrng(), d, zeros(size(d)..., 5))) == rand!(stblrng(), dref, zeros(size(dref)..., 5))
+            @test @inferred(rand(stblrng(), d)) == rand(stblrng(), dref)
+            @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), dref, 5)
+            @test @inferred(rand!(stblrng(), d, zeros(size(d)...))) == rand!(stblrng(), dref, zeros(size(dref)...))
+            if length(size(d)) == 1
+                @test @inferred(rand!(stblrng(), d, zeros(size(d)..., 5))) == rand!(stblrng(), dref, zeros(size(dref)..., 5))
+            end
         end
     end
 
@@ -110,7 +119,7 @@ using StableRNGs
         d = StandardDist{Normal,Float32}(4)
         d_uv = StandardDist{Normal,Float32}()
         dref = MvNormal(fill(1.0f0, 4))
-        @test (MvNormal(d)) == d_ref
+        @test (MvNormal(d)) == dref
         @test (Base.convert(MvNormal, d)) == dref
     end
 end

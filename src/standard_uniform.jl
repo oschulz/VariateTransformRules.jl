@@ -7,8 +7,6 @@ const StandardMvUniform{T<:Real} = StandardDist{Uniform,T,1}
 Base.minimum(::StandardDist{Uniform,T,0}) where T = zero(T)
 Base.maximum(::StandardDist{Uniform,T,0}) where T = one(T)
 
-StatsBase.params(::StandardDist{Uniform,T,0}) where T = (zero(T), one(T))
-
 Distributions.location(::StandardDist{Uniform,T,0}) where T = zero(T)
 Distributions.scale(::StandardDist{Uniform,T,0}) where T = one(T)
 
