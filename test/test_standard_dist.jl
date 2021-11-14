@@ -83,6 +83,9 @@ using StableRNGs
 
         if size(d) == ()
             @test @inferred(truncated(d, quantile(dref, 1//3), quantile(dref, 2//3))) == truncated(dref, quantile(dref, 1//3), quantile(dref, 2//3))
+
+            @test @inferred(product_distribution(fill(d, 3))) == StandardDist{D,T}(3)
+            @test @inferred(product_distribution(fill(d, 3, 4))) == StandardDist{D,T}(3, 4)
         end
 
         if length(size(d)) == 1
@@ -101,10 +104,10 @@ using StableRNGs
 
     @testset "StandardDist{Normal}()" begin
         # TODO: Add @inferred
-        @test (MvNormal(StandardDist{Normal,Float64}(4))) == MvNormal(fill(1.0, 4))
-        @test (Base.convert(MvNormal, StandardDist{Normal,Float64}(4))) == MvNormal(fill(1.0, 4))
-
-        @test @inferred(product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3))) isa VariateTransformations.StandardMvNormal{Float32}
-        @test product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3)) == VariateTransformations.StandardMvNormal{Float32}(3)
+        d = StandardDist{Normal,Float32}(4)
+        d_uv = StandardDist{Normal,Float32}()
+        dref = MvNormal(fill(1.0f0, 4))
+        @test (MvNormal(d)) == d_ref
+        @test (Base.convert(MvNormal, d)) == dref
     end
 end

@@ -26,7 +26,7 @@ StandardDist{D}(dims::Vararg{Integer,N}) where {D<:Distribution{Univariate,Conti
 
 
 function Base.show(io::IO, d::StandardDist{D,T}) where {D,T}
-    print(io, @__MODULE__, ".", nameof(typeof(d)), "{", D, ",", T, "}")
+    print(io, nameof(typeof(d)), "{", D, ",", T, "}")
     show(io, d._size)
 end
 
@@ -139,4 +139,5 @@ end
 
 Distributions.truncated(d::StandardDist{D,T,0}, l::Real, u::Real) where {D,T} = truncated(nonstddist(d), l, u)
 
+Distributions.product_distribution(dists::AbstractVector{StandardDist{D,T,0}}) where {D,T} = StandardDist{D,T}(size(dists)...)
 Distributions.product_distribution(dists::AbstractArray{StandardDist{D,T,0}}) where {D,T} = StandardDist{D,T}(size(dists)...)
