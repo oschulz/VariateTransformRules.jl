@@ -19,6 +19,7 @@ using StatsBase
 
 import ForwardDiff
 import ForwardDiffPullbacks
+import StatsFuns
 
 include("standard_dist.jl")
 include("standard_uniform.jl")

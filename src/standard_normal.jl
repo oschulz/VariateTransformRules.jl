@@ -39,8 +39,16 @@ Distributions.pdf(d::StandardDist{Normal,T,0}, x::U) where {T,U<:Real} = invsqrt
 
 Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) where T = -x
 
-Base.rand(rng::AbstractRNG, d::StandardDist{Normal,T,0}) where T = randn(rng, float(T))
+@inline Distributions.logcdf(d::StandardDist{Normal,<:Real,0}, x::Real) = StatsFuns.normlogcdf(x)
+@inline Distributions.cdf(d::StandardDist{Normal,<:Real,0}, x::Real) = StatsFuns.normcdf(x)
+@inline Distributions.logccdf(d::StandardDist{Normal,<:Real,0}, x::Real) = StatsFuns.normlogccdf(x)
+@inline Distributions.ccdf(d::StandardDist{Normal,<:Real,0}, x::Real) = StatsFuns.normccdf(x)
+@inline Distributions.quantile(d::StandardDist{Normal,<:Real,0}, p::Real) = StatsFuns.norminvcdf(p)
+@inline Distributions.cquantile(d::StandardDist{Normal,<:Real,0}, p::Real) = StatsFuns.norminvccdf(p)
+@inline Distributions.invlogcdf(d::StandardDist{Normal,<:Real,0}, p::Real) = StatsFuns.norminvlogcdf(p)
+@inline Distributions.invlogccdf(d::StandardDist{Normal,<:Real,0}, p::Real) = StatsFuns.norminvlogccdf(p)
 
+Base.rand(rng::AbstractRNG, d::StandardDist{Normal,T,0}) where T = randn(rng, float(T))
 
 Distributions.invcov(d::StandardDist{Normal,T,1}) where T = cov(d)
 Distributions.logdetcov(d::StandardDist{Normal,T,1}) where T = zero(T)

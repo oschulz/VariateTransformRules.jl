@@ -177,6 +177,9 @@ end
 @inline Distributions.ccdf(d::StandardDist, x::Real) = ccdf(nonstddist(d), x)
 @inline Distributions.quantile(d::StandardDist, p::Real) = quantile(nonstddist(d), p)
 @inline Distributions.cquantile(d::StandardDist, p::Real) = cquantile(nonstddist(d), p)
+@inline Distributions.invlogcdf(d::StandardDist, p::Real) = invlogcdf(nonstddist(d), p)
+@inline Distributions.invlogccdf(d::StandardDist, p::Real) = invlogccdf(nonstddist(d), p)
+
 @inline Distributions.mgf(d::StandardDist, t::Real) = mgf(nonstddist(d), t)
 @inline Distributions.cf(d::StandardDist, t::Real) = cf(nonstddist(d), t)
 
