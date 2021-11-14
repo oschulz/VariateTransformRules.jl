@@ -105,12 +105,21 @@ end
 
 @inline Distributions.logpdf(d::StandardDist{D,T,0}, x::U) where {D,T,U} = logpdf(nonstddist(d), x)
 
-function Distributions.logpdf(d::StandardDist{D,T}, x::AbstractVector{U}) where {D,T,U<:Real}
+function Distributions.logpdf(d::StandardDist{D,T,1}, x::AbstractVector{U}) where {D,T,U<:Real}
     _checkvarsize(d, x)
     Distributions._logpdf(d, x)
 end
 
-function Distributions._logpdf(d::StandardDist{D,T}, x::AbstractArray{U}) where {D,T,U<:Real}
+function Distributions._logpdf(d::StandardDist{D,T,1}, x::AbstractVector{U}) where {D,T,U<:Real}
+    sum(x_i -> logpdf(StandardDist{D,T,0}(), x_i), x)
+end
+
+function Distributions.logpdf(d::StandardDist{D,T,2}, x::AbstractMatrix{U}) where {D,T,U<:Real}
+    _checkvarsize(d, x)
+    Distributions._logpdf(d, x)
+end
+
+function Distributions._logpdf(d::StandardDist{D,T,2}, x::AbstractMatrix{U}) where {D,T,U<:Real}
     sum(x_i -> logpdf(StandardDist{D,T,0}(), x_i), x)
 end
 
@@ -134,12 +143,21 @@ end
 
 #@inline Distributions.pdf(d::StandardDist{D,T,0}, x::U) where {D,T,U} = pdf(nonstddist(d), x)
 
-function Distributions.pdf(d::StandardDist{D,T}, x::AbstractVector{U}) where {D,T,U<:Real}
+function Distributions.pdf(d::StandardDist{D,T,1}, x::AbstractVector{U}) where {D,T,U<:Real}
     _checkvarsize(d, x)
     Distributions._pdf(d, x)
 end
 
-function Distributions._pdf(d::StandardDist{D,T}, x::AbstractVector{U}) where {D,T,U<:Real}
+function Distributions._pdf(d::StandardDist{D,T,1}, x::AbstractVector{U}) where {D,T,U<:Real}
+    exp(Distributions._logpdf(d, x))
+end
+
+function Distributions.pdf(d::StandardDist{D,T,2}, x::AbstractMatrix{U}) where {D,T,U<:Real}
+    _checkvarsize(d, x)
+    Distributions._pdf(d, x)
+end
+
+function Distributions._pdf(d::StandardDist{D,T,2}, x::AbstractMatrix{U}) where {D,T,U<:Real}
     exp(Distributions._logpdf(d, x))
 end
 
