@@ -5,8 +5,7 @@ import VariateTransformations
 import Documenter
 
 Test.@testset "Package VariateTransformations" begin
-    #include("test_standard_uniform.jl")
-    #include("test_standard_normal.jl")
+    include("test_standard_dist.jl")
     #include("test_trafo_utils.jl")
     #include("test_var_trafo_result.jl")
 
