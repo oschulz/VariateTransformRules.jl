@@ -13,7 +13,7 @@ Distributions.scale(::StandardDist{Uniform,T,0}) where T = one(T)
 Statistics.mean(d::StandardDist{Uniform,T,0}) where T = convert(float(T), 1//2)
 StatsBase.median(d::StandardDist{Uniform,T,0}) where T = mean(d)
 StatsBase.mode(d::StandardDist{Uniform,T,0}) where T = mean(d)
-StatsBase.modes(d::StandardDist{Uniform,T,0}) where T = Fill(mode(d), 1)
+StatsBase.modes(d::StandardDist{Uniform,T,0}) where T = T[]
 
 Statistics.var(d::StandardDist{Uniform,T,0}) where T = convert(float(T), 1//12)
 StatsBase.std(d::StandardDist{Uniform,T,0}) where T = sqrt(var(d))
@@ -53,7 +53,7 @@ end
 
 Distributions.logccdf(d::StandardDist{Uniform,T,0}, x::U) where {T,U<:Real} = log(ccdf(d, x))
 
-Distributions.ccdf(d::StandardDist{Uniform,T,0}, x::U) where {T,U<:Real} = one(y) - cdf(d, x)
+Distributions.ccdf(d::StandardDist{Uniform,T,0}, x::U) where {T,U<:Real} = one(x) - cdf(d, x)
 
 
 function Distributions.quantile(d::StandardDist{Uniform,T,0}, p::U) where {T,U<:Real}

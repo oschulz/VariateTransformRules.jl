@@ -13,7 +13,7 @@ import ForwardDiff
     stblrng() = StableRNG(789990641)
 
     for (D, T, sz, dref) in [
-        #(Uniform, Float64, (), Uniform()),
+        (Uniform, Float64, (), Uniform()),
         #(Uniform, Float32, (), Uniform(0.0f0, 1.0f0)),
         #(Uniform, Float32, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
         #(Uniform, Float64, (5,), MatrixReshaped(product_distribution(fill(Uniform(0.0, 1.0), 6)), 2, 3)),
