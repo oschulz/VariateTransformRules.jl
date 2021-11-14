@@ -1,5 +1,55 @@
 # This file is a part of VariateTransformations.jl, licensed under the MIT License (MIT).
 
+
+"""
+    firsttype(::Type{T}, ::Type{U}) where {T<:Real,U<:Real}
+
+Return the first type, but as a dual number type if the second one is dual.
+
+If `U <: ForwardDiff.Dual{tag,<:Real,N}`, returns `ForwardDiff.Dual{tag,T,N}`,
+otherwise returns `T`
+"""
+function firsttype end
+
+firsttype(::Type{T}, ::Type{U}) where {T<:Real,U<:Real} = T
+firsttype(::Type{T}, ::Type{<:ForwardDiff.Dual{tag,<:Real,N}}) where {T<:Real,tag,N} = ForwardDiff.Dual{tag,T,N}
+
+
+"""
+    dconvert(::Type{T}, x::Real)
+    dconvert(::Type{T}, x::NTuple{N,Real})
+    dconvert(::Type{T}, x::AbstractArray{<:Real})
+
+Convert `x`, resp. the elements of `x`, to type T, preserving
+dual numbers.
+
+If `x` or it's elements are have type `ForwardDiff.Dual{tag,U}` the return
+value or it's elements will have type `ForwardDiff.Dual{tag,T}`, if not,
+then just `T`.
+"""
+function dconvert end
+
+dconvert(::Type{T}, x::T) where {T<:Real} = x
+dconvert(::Type{T}, x::Real) where {T<:Real} = convert(T, x)
+function dconvert(::Type{T}, x::ForwardDiff.Dual{tag,<:Real}) where {T<:Real,tag}
+    ForwardDiff.Dual{tag}(dconvert(T, x.value), dconvert(T, x.partials.values))
+end
+
+dconvert(::Type{T}, x::NTuple{N,T}) where {T<:Real,N} = x
+dconvert(::Type{T}, x::NTuple{N,<:Real}) where {T<:Real,N} = map(Base.Fix1(convert, T), x)
+dconvert(::Type{T}, x::NTuple{N,ForwardDiff.Dual{tag,T}}) where {T<:Real,tag,N} = x
+function dconvert(::Type{T}, x::NTuple{N,ForwardDiff.Dual{tag,<:Real}}) where {T<:Real,tag,N}
+    map(Base.Fix1(dconvert, T), x)
+end
+
+dconvert(::Type{T}, x::AbstractArray{T}) where {T<:Real} = x
+dconvert(::Type{T}, x::AbstractArray{<:Real}) where {T<:Real} = map(Base.Fix1(convert, T), x)
+dconvert(::Type{T}, x::AbstractArray{ForwardDiff.Dual{tag,T}}) = x
+function dconvert(::Type{T}, x::AbstractArray{ForwardDiff.Dual{tag,<:Real}}) where {T<:Real,tag}
+    map(Base.Fix1(dconvert, T), x)
+end
+
+
 _nogradient_pullback1(ΔΩ) = (NoTangent(), ZeroTangent())
 _nogradient_pullback2(ΔΩ) = (NoTangent(), ZeroTangent(), ZeroTangent())
 

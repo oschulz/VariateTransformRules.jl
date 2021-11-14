@@ -50,70 +50,46 @@ end
 end
 
 
-@inline function _eval_dist_trafo_func(f::typeof(_trafo_cdf), d::Distribution{Univariate,Continuous}, x::Real, prev_ladj::OptionalLADJ)
-    R_V = float(promote_type(typeof(x), eltype(params(d)), ismissing(prev_ladj) ? Bool : typeof(prev_ladj)))
-    R_LADJ = !ismissing(prev_ladj) ? R_V : Missing
+function transform_variate(::StandardUvUniform, src::Distribution{Univariate,Continuous}, x::Real)
+    R = float(promote_type(typeof(x), eltype(params(d))))
     if insupport(d, x)
-        y = f(d, x)
-        trafo_ladj = !ismissing(prev_ladj) ? + logpdf(d, x) : missing
-        var_trafo_result(convert(R_V, y), x, convert(R_LADJ, trafo_ladj), prev_ladj)
+        convert(R, _trafo_cdf(d, x))
     else
-        var_trafo_result(convert(R_V, NaN), x, convert(R_LADJ, !ismissing(prev_ladj) ? NaN : missing), prev_ladj)
-    end
-end
-
-@inline function _eval_dist_trafo_func(f::typeof(_trafo_quantile), d::Distribution{Univariate,Continuous}, x::Real, prev_ladj::OptionalLADJ)
-    R_V = float(promote_type(typeof(x), eltype(params(d)), ismissing(prev_ladj) ? Bool : typeof(prev_ladj)))
-    R_LADJ = !ismissing(prev_ladj) ? R_V : Missing
-    if 0 <= x <= 1
-        y = f(d, x)
-        trafo_ladj = !ismissing(prev_ladj) ? - logpdf(d, y) : missing
-        var_trafo_result(convert(R_V, y), x, convert(R_LADJ, trafo_ladj), prev_ladj)
-    else
-        var_trafo_result(convert(R_V, NaN), x, convert(R_LADJ, !ismissing(prev_ladj) ? NaN : missing), prev_ladj)
+        convert(R, NaN)
     end
 end
 
 
-
-function apply_dist_trafo(::StandardUvUniform, src::Distribution{Univariate,Continuous}, x::Real, prev_ladj::OptionalLADJ)
-    _eval_dist_trafo_func(_trafo_cdf, src, x, prev_ladj)
-end
-
-
-function apply_dist_trafo(trg::Distribution{Univariate,Continuous}, ::StandardUvUniform, x::Real, prev_ladj::OptionalLADJ)
+function transform_variate(trg::Distribution{Univariate,Continuous}, ::StandardUvUniform, x::Real)
+    R = float(promote_type(typeof(x), eltype(params(d))))
     TV = float(typeof(x))
-    # Avoid x ≈ 0 and x ≈ 1 to avoid infinite variate values for target distributions with infinite support:
-    mod_src_v = ifelse(x == 0, zero(TV) + eps(TV), ifelse(x == 1, one(TV) - eps(TV), convert(TV, x)))
-    y, ladj = _eval_dist_trafo_func(_trafo_quantile, trg, mod_src_v, prev_ladj)
-    (v = y, ladj = ladj)
+    if 0 <= x <= 1
+        # Avoid x ≈ 0 and x ≈ 1 to avoid infinite variate values for target distributions with infinite support:
+        mod_x = ifelse(x == 0, zero(TV) + eps(TV), ifelse(x == 1, one(TV) - eps(TV), convert(TV, x)))
+        convert(R, _trafo_quantile(d, mod_x))
+    else
+        convert(R, NaN)
+    end
 end
 
 
-function _dist_trafo_rescale_impl(trg, src, x::Real, prev_ladj::OptionalLADJ)
-    R = float(typeof(x))
-    trg_offs, trg_scale = location(trg), scale(trg)
+function _rescaled_to_standard(src::UnivariateDistribution, x::T) where {T<:Real}
     src_offs, src_scale = location(src), scale(src)
-    rescale_factor = trg_scale / src_scale
-    y = (x - src_offs) * rescale_factor + trg_offs
-    trafo_ladj = !ismissing(prev_ladj) ? log(rescale_factor) : missing
-    var_trafo_result(y, x, trafo_ladj, prev_ladj)
+    y = (x - src_offs) / src_scale
+    dconvert(float(T), y)
 end
 
-@inline apply_dist_trafo(trg::Uniform, src::Uniform, x::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg, src, x, prev_ladj)
-@inline apply_dist_trafo(trg::StandardUvUniform, src::Uniform, x::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg, src, x, prev_ladj)
-@inline apply_dist_trafo(trg::Uniform, src::StandardUvUniform, x::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg, src, x, prev_ladj)
+function _standard_to_rescaled(trg::UnivariateDistribution, x::T) where {T<:Real}
+    trg_offs, trg_scale = location(trg), scale(trg)
+    y = muladd(x, trg_scale, trg_offs)
+    dconvert(float(T), y)
+end
 
-# ToDo: Use StandardUvNormal as standard intermediate dist for Normal? Would
-# be useful if StandardUvNormal would be a better standard intermediate than
-# StandardUvUniform for some other uniform distributions as well.
-#
-#     intermediate(src::Normal) = StandardUvNormal()
-#     intermediate(trg::Normal) = StandardUvNormal()
+@inline transform_variate(trg::StandardUvUniform, src::Uniform, x::Real) = _rescaled_to_standard(src, x)
+@inline transform_variate(trg::Uniform, src::StandardUvUniform, x::Real) = _standard_to_rescaled(trg, x)
 
-@inline apply_dist_trafo(trg::Normal, src::Normal, x::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg, src, x, prev_ladj)
-@inline apply_dist_trafo(trg::StandardUvNormal, src::Normal, x::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg, src, x, prev_ladj)
-@inline apply_dist_trafo(trg::Normal, src::StandardUvNormal, x::Real, prev_ladj::OptionalLADJ) = _dist_trafo_rescale_impl(trg, src, x, prev_ladj)
+@inline transform_variate(trg::StandardUvNormal, src::Normal, x::Real) = _rescaled_to_standard(src, x)
+@inline transform_variate(trg::Normal, src::StandardUvNormal, x::Real) = _standard_to_rescaled(trg, x)
 
 
 # ToDo: Optimized implementation for Distributions.Truncated <-> StandardUvUniform
