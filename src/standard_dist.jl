@@ -4,7 +4,7 @@
 """
     struct StandardDist{D<:Distribution{Univariate,Continuous},T<:Real,N} <: Distributions.Distribution{ArrayLikeVariate{N},Continuous}
 
-A standard uniform distribution between zero and one.
+Represents `D()` or a product distribution of `D()` in a dispatchable fashion.
 
 Constructor:
 ```
@@ -21,6 +21,7 @@ const StandardUnivariateDist{D<:Distribution{Univariate,Continuous},T<:Real} = S
 const StandardMultivariteDist{D<:Distribution{Multivariate,Continuous},T<:Real} = StandardDist{D,T,1}
 
 
+StandardDist{D,T,N}(dims::Vararg{Integer,N}) where {D<:Distribution{Univariate,Continuous},N,T<:Real} = StandardDist{D,T,N}(dims)
 StandardDist{D,T}(dims::Vararg{Integer,N}) where {D<:Distribution{Univariate,Continuous},N,T<:Real} = StandardDist{D,T,N}(dims)
 StandardDist{D}(dims::Vararg{Integer,N}) where {D<:Distribution{Univariate,Continuous},N} = StandardDist{D,Float64}(dims...)
 
@@ -32,9 +33,6 @@ end
 
 
 @inline nonstddist(d::StandardDist{D,T,0}) where {D,T} = D()
-
-# TODO: Replace `fill` by `FillArrays.Fill` once Distributions fully supports this:
-@inline nonstddist(d::StandardDist{D,T,1}) where {D,T} = product_distribution(fill(nonstddist(d), size(d)))
 
 
 (::Type{D}, d::StandardDist{D,T,0}) where {D<:Distribution{Univariate,Continuous},T} = nonstddist(d)
@@ -68,25 +66,37 @@ function Distributions.insupport(d::StandardDist{D,T,N}, x::AbstractArray{U,N}) 
     all(xi -> insupport(StandardDist{D,T}(), xi), x)
 end
 
+Base.minimum(d::StandardDist{D,T,0}) where {D,T} = minimum(nonstddist(d))
+Base.minimum(d::StandardDist{D,T,N}) where {D,T,N} = Fill(minimum(StandardDist{D,T}()), size(d)...)
+
+Base.maximum(d::StandardDist{D,T,0}) where {D,T} = maximum(nonstddist(d))
+Base.maximum(d::StandardDist{D,T,N}) where {D,T,N} = Fill(maximum(StandardDist{D,T}()), size(d)...)
 
 Statistics.mean(d::StandardDist{D,T,0}) where {D,T} = mean(nonstddist(d))
-Statistics.mean(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mean(StandardDist{Uniform,T,0}), size(d)...)
+Statistics.mean(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mean(StandardDist{D,T}()), size(d)...)
 
 Statistics.var(d::StandardDist{D,T,0}) where {D,T} = var(nonstddist(d))
-Statistics.var(d::StandardDist{D,T,N}) where {D,T,N} = Fill(var(StandardDist{Uniform,T,0}), size(d)...)
+Statistics.var(d::StandardDist{D,T,N}) where {D,T,N} = Fill(var(StandardDist{D,T}()), size(d)...)
 
 # ToDo: Define cov for N!=1?
 Statistics.cov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(var(d))
-Distributions.invcov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(Fill(inv(var(StandardDist{D,T,0})), length(d)))
-Distributions.logdetcov(d::StandardDist{D,T,1}) where {D,T} = log(var(StandardDist{D,T,0})) + length(d)
+Distributions.invcov(d::StandardDist{D,T,1}) where {D,T} = Diagonal(Fill(inv(var(StandardDist{D,T}())), length(d)))
+Distributions.logdetcov(d::StandardDist{D,T,1}) where {D,T} = log(var(StandardDist{D,T}())) + length(d)
 
 StatsBase.mode(d::StandardDist{D,T,0}) where {D,T} = mode(nonstddist(d))
-StatsBase.mode(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mode(StandardDist{Uniform,T,0}), size(d)...)
+StatsBase.mode(d::StandardDist{D,T,N}) where {D,T,N} = Fill(mode(StandardDist{D,T}()), size(d)...)
 StatsBase.modes(d::StandardDist) = [mode(d)]
 
 StatsBase.entropy(d::StandardDist{D,T,0}) where {D,T} = entropy(nonstddist(d))
-StatsBase.entropy(d::StandardDist{D,T,N}) where {D,T,N} = length(d) * entropy(StandardDist{D,T,0}())
+StatsBase.entropy(d::StandardDist{D,T,N}) where {D,T,N} = length(d) * entropy(StandardDist{D,T}()())
 
+
+Distributions.insupport(d::StandardDist{D,T,0}, x::Real) where {D,T} = insupport(nonstddist(d), x)
+
+function Distributions.insupport(d::StandardDist{D,T,N}, x::AbstractArray{T,N}) where {D,T,N}
+    _checkvarsize(d, x)
+    all(Base.Fix1(insupport, StandardDist{D,T}()), x)
+end
 
 @inline Distributions.logpdf(d::StandardDist{D,T,0}, x::U) where {D,T,U} = logpdf(nonstddist(d), x)
 
@@ -102,7 +112,7 @@ end
 
 Distributions.gradlogpdf(d::StandardDist{D,T,0}, x::Real) where {D,T} = gradlogpdf(nonstddist(d), x)
 
-function Distributions.gradlogpdf(d::StandardDist{Uniform,T,N}, x::AbstractArray{<:Real}) where {D,T,N}
+function Distributions.gradlogpdf(d::StandardDist{D,T,N}, x::AbstractArray{<:Real}) where {D,T,N}
     _checkvarsize(d, x)
     gradlogpdf.(StandardDist{T,N,0}(), x)
 end

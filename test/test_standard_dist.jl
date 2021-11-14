@@ -12,21 +12,27 @@ using StableRNGs
     stblrng() = StableRNG(789990641)
 
     D = Normal
-    T = Float64
-    dref = Normal()
-    sz = ()
+    T = Float32
+    #dref = Normal()
+    dref = MvNormal(fill(1.0f0, 5))
+    sz = (5)
 
     @testset "StandardDist{D,T}(sz...)" begin
         @test @inferred(StandardDist{D}(sz...)) isa StandardDist{D,Float64}
         @test @inferred(StandardDist{D,T}(sz...)) isa StandardDist{D,T}
+        @test @inferred(StandardDist{D,T,N}(sz...)) isa StandardDist{D,T}
         @test @inferred(size(StandardDist{D}(sz...))) == size(dref)
         @test @inferred(size(StandardDist{D,T}(sz...))) == size(dref)
+        @test @inferred(size(StandardDist{D,T,N}(sz...))) == size(dref)
 
         d = StandardDist{D,T}(sz...)
 
-        if length(size(d)) < 3
+        if size(d) == ()
             @test @inferred(VariateTransformations.nonstddist(d)) == dref
         end
+
+        @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
+        @test @inferred(eltype(d)) == eltype(dref)
 
         @test @inferred(minimum(d)) == minimum(dref)
         @test @inferred(maximum(d)) == maximum(dref)
@@ -36,9 +42,6 @@ using StableRNGs
         
         @test @inferred(location(d)) == location(dref)
         @test @inferred(scale(d)) == scale(dref)
-        
-        @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
-        @test @inferred(eltype(d)) == eltype(dref)
 
         @test @inferred(length(d)) == length(dref)
         @test @inferred(size(d)) == size(dref)
