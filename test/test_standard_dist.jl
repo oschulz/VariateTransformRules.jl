@@ -16,11 +16,11 @@ using StableRNGs
     dref = Normal()
     sz = ()
 
-    @testset "StandardUvNormal" begin
+    @testset "StandardDist{D,T}(sz...)" begin
         @test @inferred(StandardDist{D}(sz...)) isa StandardDist{D,Float64}
         @test @inferred(StandardDist{D,T}(sz...)) isa StandardDist{D,T}
-        @test @inferred(size(StandardDist{D}(sz...))) == size
-        @test @inferred(size(StandardDist{D,T}(sz...))) == size
+        @test @inferred(size(StandardDist{D}(sz...))) == size(dref)
+        @test @inferred(size(StandardDist{D,T}(sz...))) == size(dref)
 
         d = StandardDist{D,T}(sz...)
 
@@ -81,68 +81,30 @@ using StableRNGs
         @test @inferred(rand(stblrng(), d)) == rand(stblrng(), d)
         @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), d, 5)
 
-        @test @inferred(product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3))) isa VariateTransformations.StandardMvNormal{Float32}
-        @test product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3)) == VariateTransformations.StandardMvNormal{Float32}(3)
+        if size(d) == ()
+            @test @inferred(truncated(d, quantile(dref, 1//3), quantile(dref, 2//3))) == truncated(dref, quantile(dref, 1//3), quantile(dref, 2//3))
+        end
 
-        @test @inferred(truncated(VariateTransformations.StandardUvNormal{Float32}(), -2.2f0, 3.1f0)) isa Truncated{Normal{Float32}}
-        @test truncated(VariateTransformations.StandardUvNormal{Float32}(), -2.2f0, 3.1f0) == truncated(Normal(0.0f0, 1.0f0), -2.2f0, 3.1f0)
+        if length(size(d)) == 1
+            @test @inferred(convert(Distributions.Product, d)) isa Distributions.Product
+            d_as_prod = convert(Distributions.Product, d)
+            @test d_as_prod.v == fill(StandardDist{D,T}(), size(d)...)
+        end
 
-        @test @inferred(Distributions.Product(d)) == Distributions.Product(fill(d, 3))
-        @test @inferred(convert(Product, VariateTransformations.StandardMvNormal(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvNormal(), 3))
+        @test @inferred(rand(stblrng(), d)) == rand(stblrng(), dref)
+        @test @inferred(rand(stblrng(), d, 5)) == rand(stblrng(), dref, 5)
+        @test @inferred(rand!(stblrng(), d, zeros(size(d)...))) == rand!(stblrng(), dref, zeros(size(dref)...))
+        if length(size(d)) == 1
+            @test @inferred(rand!(stblrng(), d, zeros(size(d)..., 5))) == rand!(stblrng(), dref, zeros(size(dref)..., 5))
+        end
     end
 
     @testset "StandardDist{Normal}()" begin
-        @test @inferred(MvNormal(StandardDist{Normal,Float64}(4))) == MvNormal(fill(1.0, 4))
-        @test @inferred(Base.convert(MvNormal, StandardDist{Normal,Float64}(4))) == MvNormal(fill(1.0, 4))
-    end
+        # TODO: Add @inferred
+        @test (MvNormal(StandardDist{Normal,Float64}(4))) == MvNormal(fill(1.0, 4))
+        @test (Base.convert(MvNormal, StandardDist{Normal,Float64}(4))) == MvNormal(fill(1.0, 4))
 
-    @testset "StandardMvNormal" begin
-        @test @inferred(Distributions.Product(VariateTransformations.StandardMvNormal{Float32}(3))) isa Distributions.Product{Continuous,VariateTransformations.StandardUvNormal{Float32}}
-        @test @inferred(Distributions.Product(VariateTransformations.StandardMvNormal{Float64}(3))) isa Distributions.Product{Continuous,VariateTransformations.StandardUvNormal{Float64}}
-        @test @inferred(Distributions.Product(VariateTransformations.StandardMvNormal{Float64}(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvNormal(), 3))
-        @test @inferred(convert(Product, VariateTransformations.StandardMvNormal(3))) == Distributions.Product(Fill(VariateTransformations.StandardUvNormal(), 3))
-
-
-        d = VariateTransformations.StandardMvNormal(3)
-        dref = MvNormal(ScalMat(3, 1.0))
-
-        @test @inferred(eltype(typeof(d))) == eltype(typeof(dref))
-        @test @inferred(eltype(d)) == eltype(dref)
-
-        @test @inferred(length(d)) == length(dref)
-        @test @inferred(size(d)) == size(dref)
-
-        @test @inferred(view(VariateTransformations.StandardMvNormal{Float32}(7), 3)) isa VariateTransformations.StandardUvNormal{Float32}
-        @test_throws BoundsError view(VariateTransformations.StandardMvNormal{Float32}(7), 9)
-        @test @inferred(view(VariateTransformations.StandardMvNormal{Float32}(7), 2:4)) isa VariateTransformations.StandardMvNormal{Float32}
-        @test view(VariateTransformations.StandardMvNormal{Float32}(7), 2:4) == VariateTransformations.StandardMvNormal{Float32}(3)
-        @test_throws BoundsError view(VariateTransformations.StandardMvNormal{Float32}(7), 2:8)
-        
-        @test @inferred(params(d)) == params(dref)
-        @test @inferred(partype(d)) == partype(dref)
-        
-        @test @inferred(mean(d)) == mean(dref)
-        @test @inferred(var(d)) == var(dref)
-        @test @inferred(cov(d)) == cov(dref)
-        
-        @test @inferred(mode(d)) == mode(dref)
-        @test @inferred(modes(d)) == modes(dref)
-        
-        @test @inferred(invcov(d)) == invcov(dref)
-        @test @inferred(logdetcov(d)) == logdetcov(dref)
-        
-        @test @inferred(entropy(d)) == entropy(dref)
-
-        for x in fill.([-Inf, -1.3, 0.0, 1.3, +Inf], 3)
-            @test @inferred(insupport(d, x)) == insupport(dref, x)
-            @test @inferred(logpdf(d, x)) == logpdf(dref, x)
-            @test @inferred(pdf(d, x)) == pdf(dref, x)
-            @test @inferred(sqmahal(d, x)) == sqmahal(dref, x)
-            @test @inferred(gradlogpdf(d, x)) == gradlogpdf(dref, x)
-        end
-            
-        @test @inferred(rand(stblrng(), d)) == rand(stblrng(), d)
-        @test @inferred(rand!(stblrng(), d, zeros(3))) == rand!(stblrng(), d, zeros(3))
-        @test @inferred(rand!(stblrng(), d, zeros(3, 10))) == rand!(stblrng(), d, zeros(3, 10))
+        @test @inferred(product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3))) isa VariateTransformations.StandardMvNormal{Float32}
+        @test product_distribution(fill(VariateTransformations.StandardUvNormal{Float32}(), 3)) == VariateTransformations.StandardMvNormal{Float32}(3)
     end
 end
