@@ -5,7 +5,7 @@ const StandardMvNormal{T<:Real} = StandardDist{Normal,T,1}
 
 
 Distributions.MvNormal(d::StandardDist{Normal,T,1}) where T = MvNormal(ScalMat(length(d), one(T)))
-Base.convert(::Type{Distributions.MvNormal}, d::StandardDist{Normal,T,1}) = MvNormal(d)
+Base.convert(::Type{Distributions.MvNormal}, d::StandardDist{Normal,T,1}) where T = MvNormal(d)
 
 
 Base.minimum(d::StandardDist{Normal,T,0}) where T = convert(float(T), -Inf)
@@ -13,7 +13,7 @@ Base.maximum(d::StandardDist{Normal,T,0}) where T = convert(float(T), +Inf)
 
 Distributions.insupport(d::StandardDist{Normal,T,0}, x::Real) where T = !isnan(x)
 
-StatsBase.params(d::StandardDist{Normal,T,0}) = (mean(d), var(d))
+StatsBase.params(d::StandardDist{Normal,T,0}) where T = (mean(d), var(d))
 
 Distributions.location(d::StandardDist{Normal,T,0}) where T = mean(d)
 Distributions.scale(d::StandardDist{Normal,T,0}) where T = var(d)
@@ -40,7 +40,7 @@ StatsBase.entropy(d::StandardDist{Normal,T,0}) where T = muladd(log2π, T(1//2),
 Distributions.logpdf(d::StandardDist{Normal,T,0}, x::U) where {T,U} = muladd(abs2(x), -U(1)/U(2), -log2π/U(2))
 Distributions.pdf(d::StandardDist{Normal,T,0}, x::U) where {T,U} = invsqrt2π * exp(-abs2(x)/U(2))
 
-Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) = -x
+Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) where T = -x
 
 Base.rand(rng::AbstractRNG, d::StandardDist{Normal,T,0}) where T = randn(rng, float(T))
 

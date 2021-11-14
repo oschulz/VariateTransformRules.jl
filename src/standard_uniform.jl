@@ -35,12 +35,12 @@ function Distributions.pdf(d::StandardDist{Uniform,T,0}, x::U) where {T,U<:Real}
     ifelse(insupport(d, x), one(R), zero(R))
 end
 
-function Distributions._logpdf(d::StandardDist{Uniform,T,N}, x::AbstractVector{U}) where {T,U<:Real}
+function Distributions._logpdf(d::StandardDist{Uniform,T,N}, x::AbstractVector{U}) where {T,N,U<:Real}
     R = float(promote_type(T,U))
     ifelse(insupport(d, x), R(0), R(-Inf))
 end
 
-function Distributions._pdf(d::StandardDist{Uniform,T,N}, x::AbstractVector{U}) where {T,U<:Real}
+function Distributions._pdf(d::StandardDist{Uniform,T,N}, x::AbstractVector{U}) where {T,N,U<:Real}
     R = promote_type(T,U)
     ifelse(insupport(d, x), one(R), zero(R))
 end
