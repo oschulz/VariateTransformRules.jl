@@ -7,7 +7,6 @@ const StandardMvNormal{T<:Real} = StandardDist{Normal,T,1}
 Distributions.MvNormal(d::StandardDist{Normal,T,1}) where T = MvNormal(ScalMat(length(d), one(T)))
 Base.convert(::Type{Distributions.MvNormal}, d::StandardDist{Normal,T,1}) where T = MvNormal(d)
 
-
 Base.minimum(d::StandardDist{Normal,T,0}) where T = convert(float(T), -Inf)
 Base.maximum(d::StandardDist{Normal,T,0}) where T = convert(float(T), +Inf)
 
@@ -35,10 +34,10 @@ StatsBase.std(d::StandardDist{Normal,T,N}) where {T,N} = FillArrays.Ones{T}(size
 StatsBase.skewness(d::StandardDist{Normal,T,0}) where T = zero(T)
 StatsBase.kurtosis(d::StandardDist{Normal,T,0}) where T = zero(T)
 
-StatsBase.entropy(d::StandardDist{Normal,T,0}) where T = muladd(log2π, T(1//2),  T(1//2))
+StatsBase.entropy(d::StandardDist{Normal,T,0}) where T = muladd(log2π, one(T)/2, one(T)/2)
 
-Distributions.logpdf(d::StandardDist{Normal,T,0}, x::U) where {T,U} = muladd(abs2(x), -U(1)/U(2), -log2π/U(2))
-Distributions.pdf(d::StandardDist{Normal,T,0}, x::U) where {T,U} = invsqrt2π * exp(-abs2(x)/U(2))
+Distributions.logpdf(d::StandardDist{Normal,T,0}, x::U) where {T,U<:Real} = muladd(abs2(x), -U(1)/U(2), -log2π/U(2))
+Distributions.pdf(d::StandardDist{Normal,T,0}, x::U) where {T,U<:Real} = invsqrt2π * exp(-abs2(x)/U(2))
 
 Distributions.gradlogpdf(d::StandardDist{Normal,T,0}, x::Real) where T = -x
 

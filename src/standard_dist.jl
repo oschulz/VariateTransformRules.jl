@@ -15,6 +15,7 @@ Constructor:
 struct StandardDist{D<:Distribution{Univariate,Continuous},T<:Real,N} <: Distributions.Distribution{ArrayLikeVariate{N},Continuous}
     _size::Dims{N}
 end
+export StandardDist
 
 const StandardUnivariateDist{D<:Distribution{Univariate,Continuous},T<:Real} = StandardDist{D,T,0}
 const StandardMultivariteDist{D<:Distribution{Multivariate,Continuous},T<:Real} = StandardDist{D,T,1}
@@ -24,11 +25,22 @@ StandardDist{D,T}(dims::Vararg{Integer,N}) where {D<:Distribution{Univariate,Con
 StandardDist{D}(dims::Vararg{Integer,N}) where {D<:Distribution{Univariate,Continuous},N} = StandardDist{D,Float64}(dims...)
 
 
+function Base.show(io::IO, d::StandardDist{D,T}) where {D,T}
+    print(io, @__MODULE__, ".", nameof(typeof(d)), "{", D, ",", T, "}")
+    show(io, d._size)
+end
+
+
 @inline nonstddist(d::StandardDist{D,T,0}) where {D,T} = D()
+
+# TODO: Replace `fill` by `FillArrays.Fill` once Distributions fully supports this:
+@inline nonstddist(d::StandardDist{D,T,1}) where {D,T} = product_distribution(fill(nonstddist(d), size(d)))
 
 
 (::Type{D}, d::StandardDist{D,T,0}) where {D<:Distribution{Univariate,Continuous},T} = nonstddist(d)
-(::Type{Distributions.Product})(d::StandardDist{D,T,1}) where {D,T<:Real} = Distributions.Product(Fill(StandardDist{D,T}(), length(d)))
+
+# TODO: Replace `fill` by `FillArrays.Fill` once Distributions fully supports this:
+(::Type{Distributions.Product})(d::StandardDist{D,T,1}) where {D,T<:Real} = Distributions.Product(fill(StandardDist{D,T}(), length(d)))
 
 Base.convert(::Type{D}, d::StandardDist{D,T,0}) where {D<:Distribution{Univariate,Continuous},T<:Real} = D(d)
 Base.convert(::Type{Distributions.Product}, d::StandardDist{D,T,1}) where {D,T<:Real} = Distributions.Product(d)
@@ -43,7 +55,7 @@ ChainRulesCore.rrule(::typeof(_checkvarsize), d::Distribution{ArrayLikeVariate{N
 
 
 @inline Base.size(d::StandardDist) = d._size
-#!!!! necessary? ### @inline Base.length(d::StandardMvNormal{T}) = product(size(d))
+@inline Base.length(d::StandardDist) = prod(size(d))
 
 Base.eltype(::Type{StandardDist{D,T,N}}) where {D,T,N} = T
 
@@ -96,7 +108,7 @@ function Distributions.gradlogpdf(d::StandardDist{Uniform,T,N}, x::AbstractArray
 end
 
 
-@inline Distributions.pdf(d::StandardDist{D,T,0}, x::U) where {D,T,U} = pdf(nonstddist(d), x)
+#@inline Distributions.pdf(d::StandardDist{D,T,0}, x::U) where {D,T,U} = pdf(nonstddist(d), x)
 
 function Distributions.pdf(d::StandardDist{D,T,N}, x::AbstractArray{U,N}) where {D,T,N,U<:Real}
     _checkvarsize(d, x)

@@ -10,7 +10,9 @@ module VariateTransformations
 using ChainRulesCore
 using Distributions
 using FillArrays
+using IrrationalConstants
 using LinearAlgebra
+using PDMats
 using Random
 using Statistics
 using StatsBase
