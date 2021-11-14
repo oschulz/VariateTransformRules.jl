@@ -50,8 +50,12 @@ end
 end
 
 
-function transform_variate(::StandardUvUniform, src::Distribution{Univariate,Continuous}, x::Real)
-    R = float(promote_type(typeof(x), eltype(params(d))))
+@inline function result_numtype(d::Distribution{Univariate}, x::T) where {T<:Real}
+    firsttype(first(typeof(x), promote_type(map(eltype, params(d))...)))
+end
+
+function transform_variate(::StandardUvUniform, src::Distribution{Univariate,Continuous}, x::T) where {T<:Real}
+    R = result_numtype(src, x)
     if insupport(d, x)
         convert(R, _trafo_cdf(d, x))
     else
@@ -60,12 +64,12 @@ function transform_variate(::StandardUvUniform, src::Distribution{Univariate,Con
 end
 
 
-function transform_variate(trg::Distribution{Univariate,Continuous}, ::StandardUvUniform, x::Real)
-    R = float(promote_type(typeof(x), eltype(params(d))))
-    TV = float(typeof(x))
+function transform_variate(trg::Distribution{Univariate,Continuous}, ::StandardUvUniform, x::T) where {T<:Real}
+    R = result_numtype(trg, x)
+    TF = float(T)
     if 0 <= x <= 1
         # Avoid x ≈ 0 and x ≈ 1 to avoid infinite variate values for target distributions with infinite support:
-        mod_x = ifelse(x == 0, zero(TV) + eps(TV), ifelse(x == 1, one(TV) - eps(TV), convert(TV, x)))
+        mod_x = ifelse(x == 0, zero(TF) + eps(TF), ifelse(x == 1, one(TF) - eps(TF), convert(TF, x)))
         convert(R, _trafo_quantile(d, mod_x))
     else
         convert(R, NaN)
@@ -76,13 +80,13 @@ end
 function _rescaled_to_standard(src::UnivariateDistribution, x::T) where {T<:Real}
     src_offs, src_scale = location(src), scale(src)
     y = (x - src_offs) / src_scale
-    dconvert(float(T), y)
+    convert(result_numtype(src, x), y)
 end
 
 function _standard_to_rescaled(trg::UnivariateDistribution, x::T) where {T<:Real}
     trg_offs, trg_scale = location(trg), scale(trg)
     y = muladd(x, trg_scale, trg_offs)
-    dconvert(float(T), y)
+    convert(result_numtype(src, x), y)
 end
 
 @inline transform_variate(trg::StandardUvUniform, src::Uniform, x::Real) = _rescaled_to_standard(src, x)

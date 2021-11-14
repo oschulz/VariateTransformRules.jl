@@ -29,6 +29,22 @@ then just `T`.
 """
 function dconvert end
 
+
+
+"""
+    result_numtype(d::Distribution, x::Real)
+
+Return the numerical (element) type of the result when converting
+the variate `x` between `d` and a standard distribution.
+"""
+function result_numtype end
+
+@inline function _result_numtype(d::Distribution{Univariate}, ::T) where {T<:Real}
+    firsttype(float(T, promote_type(map(eltype, params(d))...)))
+end
+
+
+
 dconvert(::Type{T}, x::T) where {T<:Real} = x
 dconvert(::Type{T}, x::Real) where {T<:Real} = convert(T, x)
 function dconvert(::Type{T}, x::ForwardDiff.Dual{tag,<:Real}) where {T<:Real,tag}
