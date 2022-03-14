@@ -122,7 +122,7 @@ end
 
 function apply_dist_trafo(trg::NamedTupleDist, src::StdMvDist, x::AbstractVector{<:Real}, prev_ladj::OptionalLADJ)
     unshaped_result = apply_dist_trafo(unshaped(trg), src, x, prev_ladj)
-    (v = strip_shapedasnt(varshape(trg)(unshaped_result.v)), ladj = unshaped_result.ladj)
+    (v = varshape(trg)(unshaped_result.v), ladj = unshaped_result.ladj)
 end
 
 

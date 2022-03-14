@@ -15,15 +15,15 @@ import ForwardDiff
     for (D, T, sz, dref) in [
         (Uniform, Float64, (), Uniform()),
         (Uniform, Float64, (5,), product_distribution(fill(Uniform(0.0f0, 1.0f0), 5))),
-        (Uniform, Float64, (2, 3), MatrixReshaped(product_distribution(fill(Uniform(0.0, 1.0), 6)), 2, 3)),
+        (Uniform, Float64, (2, 3), reshape(product_distribution(fill(Uniform(0.0, 1.0), 6)), 2, 3)),
         (Normal, Float64, (), Normal()),
         (Normal, Float32, (), Normal(0.0f0, 1.0f0)),
         (Normal, Float64, (5,), MvNormal(fill(1.0, 5))),
         (Normal, Float32, (5,), MvNormal(fill(1.0f0, 5))),
-        (Normal, Float64, (2, 3), MatrixReshaped(MvNormal(fill(1.0, 6)), 2, 3)),
+        (Normal, Float64, (2, 3), reshape(MvNormal(fill(1.0, 6)), 2, 3)),
         (Exponential, Float64, (), Exponential()),
         (Exponential, Float64, (5,), product_distribution(fill(Exponential(1.0), 5))),
-        (Exponential, Float64, (2, 3), MatrixReshaped(product_distribution(fill(Exponential(1.0), 6)), 2, 3)),
+        (Exponential, Float64, (2, 3), reshape(product_distribution(fill(Exponential(1.0), 6)), 2, 3)),
     ]
         @testset "StandardDist{$D,$T}($(join(sz,",")))" begin
             N = length(sz)
